@@ -198,7 +198,7 @@ private:
 };
 
 
-SDL_Surface * create_image(std::string const & pixels, SDL_PixelFormat const & format)
+SDL_Surface * surface_from_string(std::string const & pixels, SDL_PixelFormat const * format)
 {
 	unsigned width = 0;
 	for(unsigned i = 0; i < pixels.length(); i++)
@@ -217,7 +217,7 @@ SDL_Surface * create_image(std::string const & pixels, SDL_PixelFormat const & f
 	}
 	
 	SDL_Surface * surface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_SRCALPHA, width, height, 32,
-		format.Rmask, format.Gmask, format.Bmask, format.Amask);
+		format->Rmask, format->Gmask, format->Bmask, format->Amask);
 	if(surface == NULL)
 		return NULL;
 	Uint32 * data = (Uint32*)(surface->pixels);
@@ -339,7 +339,7 @@ void player_control(void)
 		entities.mask[bullet] = component::bullet_mask;
 		entities.position[bullet] = entities.position[player];
 		entities.velocity[bullet] = entities.velocity[player] + Vec2(0, -50);
-		entities.image[bullet] = create_image(bullet_pixels, *screen->format);
+		entities.image[bullet] = surface_from_string(bullet_pixels, screen->format);
 		entities.lifespan[bullet] = 5.0;
 	}
 }
@@ -375,7 +375,7 @@ void update(float const dt_unit)
 	move(dt_unit);
 	camera.setCenterY(floor(entities.position[player].y));
 	
-	if((rand() % 100) < 10)
+	if((rand() % 1000) < 10)
 	{
 		Vec2 star;
 		star.y = entities.position[player].y - window_height / 2;
@@ -389,7 +389,18 @@ void update(float const dt_unit)
 }
 void draw(void)
 {
-	SDL_FillRect(screen, NULL, 0x00000000);
+	SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
+	
+	// draw stars (background)
+	SDL_LockSurface(screen);
+	for(auto i = stars.begin(), end = stars.end(); i < end; ++i)
+	{
+		unsigned x = i->x - camera.x;
+		unsigned y = i->y - camera.y;
+		if(x >= 0 && x < screen->w && y >= 0 && y < screen->h)
+			((Uint32*)(screen->pixels))[y * screen->w + x] = SDL_MapRGB(screen->format, 128, 128, 128);
+	}
+	SDL_UnlockSurface(screen);
 	
 	// draw entities (space fighters)
 	unsigned draw_mask = component::POSITION | component::IMAGE;
@@ -404,16 +415,6 @@ void draw(void)
 		}
 	}
 	
-	// draw stars (background)
-	SDL_LockSurface(screen);
-	for(auto i = stars.begin(), end = stars.end(); i < end; ++i)
-	{
-		unsigned x = i->x - camera.x;
-		unsigned y = i->y - camera.y;
-		if(x >= 0 && x < screen->w && y >= 0 && y < screen->h)
-			((Uint32*)(screen->pixels))[y * screen->w + x] = 0x7f7f7fff;
-	}
-	SDL_UnlockSurface(screen);
 	SDL_Flip(screen);
 }
 void init_system(void)
@@ -440,7 +441,7 @@ void init_player(void)
 		component::VELOCITY |
 		component::IMAGE |
 		component::PLAYER_CONTROL;
-	entities.image[player] = create_image(player_pixels, *(screen->format));
+	entities.image[player] = surface_from_string(player_pixels, screen->format);
 	
 	Rect player_rect(0, 0, entities.image[player]->w, entities.image[player]->h);
 	player_rect.setCenter(camera.getCenter());
