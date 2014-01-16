@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <cmath>
+#include <cstdint>
 #include <deque>
 #include <iostream>
 #include <SDL/SDL.h>
@@ -19,12 +20,8 @@ std::string const bullet_pixels = "\
 
 struct Vec2{
 	float x, y;
-	Vec2(void): x(0), y(0)
-	{
-	}
-	Vec2(float X, float Y): x(X), y(Y)
-	{
-	}
+	Vec2(void): x(0), y(0) {}
+	Vec2(float X, float Y): x(X), y(Y) {}
 };
 
 Vec2 const operator+(Vec2 const & a, Vec2 const & b)
@@ -54,6 +51,12 @@ Vec2 operator*(float k, Vec2 const & a)
 	b.y = a.y * k;
 	return b;
 }
+
+struct Size{
+	float w, h;
+	Size(void): w(0), h(0) {}
+	Size(float W, float H) : w(W), h(H) {}
+};
 
 // Rect represents a rectangle with top left corner as (x, y)
 struct Rect{
@@ -129,8 +132,19 @@ struct Rect{
 			p.y >= y && p.y <= (y + h);
 	}
 };
-
+struct Gun{
+	float wait_time;
+	float delay;
+	enum firing_side{
+		CENTER,
+		LEFT,
+		RIGHT
+	}side;
+	bool fire;
+	unsigned parent;
+};
 #define BIT(n) (1 << (n))
+typedef uint16_t mask_t;
 namespace component{
 	enum flag{
 		POSITION = BIT(0),
@@ -140,19 +154,25 @@ namespace component{
 		ENEMY_CONTROL = BIT(4),
 		COLLISION_DAMAGE = BIT(5),
 		COLLISION_EFFECT = BIT(6),
-		LIFESPAN = BIT(7)
+		LIFESPAN = BIT(7),
+		GUN = BIT(8),
+		SIZE = BIT(9)
 	};
-	unsigned const bullet_mask = component::POSITION | component::VELOCITY | component::IMAGE | component::LIFESPAN;
-	unsigned const move_mask = component::POSITION | component::VELOCITY;
+	mask_t const player_mask = POSITION | VELOCITY | SIZE | IMAGE | PLAYER_CONTROL | GUN;
+	mask_t const bullet_mask = POSITION | VELOCITY | SIZE | IMAGE | LIFESPAN;
+	mask_t const move_mask = POSITION | VELOCITY;
+	mask_t const shooter_mask = POSITION | SIZE | GUN;
 }
 template <unsigned MAX_ENTITIES>
 struct Entity{
-	unsigned mask[MAX_ENTITIES];
+	mask_t mask[MAX_ENTITIES];
 	Vec2 position[MAX_ENTITIES];
 	Vec2 velocity[MAX_ENTITIES];
+	Size size[MAX_ENTITIES];
 	SDL_Surface * image[MAX_ENTITIES];
 	int collision_damage[MAX_ENTITIES];
 	float lifespan[MAX_ENTITIES];
+	Gun gun[MAX_ENTITIES];
 	
 	Entity(void): m_count(0)
 	{
@@ -279,7 +299,6 @@ void handle_event(void)
 				control::left = true;
 			else if(symbol == SDLK_RIGHT)
 				control::right = true;
-			
 			else if(symbol == SDLK_z)
 				control::fire = true;
 			else if(symbol == SDLK_ESCAPE)
@@ -297,6 +316,8 @@ void handle_event(void)
 				control::left = false;
 			else if(symbol == SDLK_RIGHT)
 				control::right = false;
+			else if(symbol == SDLK_z)
+				control::fire = false;
 		}
 		else if(e.type == SDL_QUIT)
 		{
@@ -334,13 +355,49 @@ void player_control(void)
 	
 	if(control::fire)
 	{
-		control::fire = false;
-		unsigned bullet = entities.claim();
-		entities.mask[bullet] = component::bullet_mask;
-		entities.position[bullet] = entities.position[player];
-		entities.velocity[bullet] = entities.velocity[player] + Vec2(0, -50);
-		entities.image[bullet] = surface_from_string(bullet_pixels, screen->format);
-		entities.lifespan[bullet] = 5.0;
+		entities.gun[player].fire = true;
+	}
+	else
+	{
+		entities.gun[player].fire = false;
+	}
+}
+void shooter_process(float dt)
+{
+	for(unsigned i = 0; i < entities.count(); i++)
+	{
+		if((entities.mask[i] & component::shooter_mask) == component::shooter_mask)
+		{
+			if(entities.gun[i].wait_time > 0)
+				entities.gun[i].wait_time -= dt;
+			if(entities.gun[i].fire && entities.gun[i].wait_time <= 0)
+			{
+				entities.gun[i].wait_time += entities.gun[i].delay;
+				
+				unsigned bullet = entities.claim();
+				entities.mask[bullet] = component::bullet_mask;
+				
+				unsigned parent = entities.gun[i].parent;
+				if(entities.gun[i].side == Gun::LEFT)
+				{
+					entities.position[bullet] = entities.position[parent];
+					entities.gun[i].side = Gun::RIGHT;
+				}
+				else if(entities.gun[i].side == Gun::RIGHT)
+				{
+					entities.position[bullet] = entities.position[parent] + Vec2(entities.size[parent].w, 0);
+					entities.gun[i].side = Gun::LEFT;
+				}
+				else
+				{
+					entities.position[bullet] = entities.position[parent] + Vec2(entities.size[parent].w / 2, 0);
+				}
+				
+				entities.velocity[bullet] = entities.velocity[player] + Vec2(0, -50);
+				entities.image[bullet] = surface_from_string(bullet_pixels, screen->format);
+				entities.lifespan[bullet] = 5.0;
+			}
+		}
 	}
 }
 void bullet_process(float dt)
@@ -371,6 +428,7 @@ void move(float dt)
 void update(float const dt_unit)
 {
 	player_control();
+	shooter_process(dt_unit);
 	bullet_process(dt_unit);
 	move(dt_unit);
 	camera.setCenterY(floor(entities.position[player].y));
@@ -436,16 +494,20 @@ void init_camera(void)
 void init_player(void)
 {
 	player = entities.claim();
-	entities.mask[player] =
-		component::POSITION |
-		component::VELOCITY |
-		component::IMAGE |
-		component::PLAYER_CONTROL;
+	
+	entities.mask[player] = component::player_mask;
+	
 	entities.image[player] = surface_from_string(player_pixels, screen->format);
 	
 	Rect player_rect(0, 0, entities.image[player]->w, entities.image[player]->h);
 	player_rect.setCenter(camera.getCenter());
 	entities.position[player] = player_rect.getPosition();
+	
+	entities.size[player] = Size(entities.image[player]->w, entities.image[player]->h);
+	
+	entities.gun[player].parent = player;
+	entities.gun[player].side = Gun::LEFT;
+	entities.gun[player].delay = 0.1;
 }
 void cleanup_system(void)
 {
