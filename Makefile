@@ -11,7 +11,7 @@ endif
 
 LDFLAGS+=-lm\
 	-lSDLmain -lSDL -lSDL_image
-CFLAGS+=-std=c++03\
+CFLAGS+=-std=c++0x\
 	-pedantic-errors -Wstrict-aliasing=0 -Wall\
 	-g\
 
