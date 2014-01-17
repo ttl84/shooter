@@ -7,6 +7,9 @@
 #include <stack>
 #include <iostream>
 #include <SDL/SDL.h>
+
+#include "Vec2.h"
+#include "Rect.h"
 std::string const player_pixels = "\
         *        \n\
         *        \n\
@@ -47,39 +50,6 @@ std::string const bullet_pixels = "\
 *\n\
 *";
 
-struct Vec2{
-	float x, y;
-	Vec2(void): x(0), y(0) {}
-	Vec2(float X, float Y): x(X), y(Y) {}
-};
-
-Vec2 const operator+(Vec2 const & a, Vec2 const & b)
-{
-	Vec2 c;
-	c.x = a.x + b.x;
-	c.y = a.y + b.y;
-	return c;
-}
-Vec2 const & operator+=(Vec2 & a, Vec2 const & b)
-{
-	a.x += b.x;
-	a.y += b.y;
-	return a;
-}
-Vec2 operator*(Vec2 const & a, float k)
-{
-	Vec2 b;
-	b.x = a.x * k;
-	b.y = a.y * k;
-	return b;
-}
-Vec2 operator*(float k, Vec2 const & a)
-{
-	Vec2 b;
-	b.x = a.x * k;
-	b.y = a.y * k;
-	return b;
-}
 
 struct Size{
 	float w, h;
@@ -88,79 +58,6 @@ struct Size{
 };
 
 // Rect represents a rectangle with top left corner as (x, y)
-struct Rect{
-	float x, y;
-	float w, h;
-	
-	Rect(float X, float Y, float W, float H)
-	{
-		if(W < 0)
-		{
-			X -= W;
-			W = -W;
-		}
-		if(H < 0)
-		{
-			Y -= H;
-			H = -H;
-		}
-		x = X;
-		y = Y;
-		w = W;
-		h = H;
-	}
-	Rect(void): x(0), y(0), w(0), h(0)
-	{
-	}
-	Vec2 getCenter(void) const
-	{
-		Vec2 point;
-		point.x = x + w / 2;
-		point.y = y + h / 2;
-		return point;
-	}
-	void setCenter(Vec2 const & center)
-	{
-		x = center.x - w / 2;
-		y = center.y - h / 2;
-	}
-	float getCenterY(void) const
-	{
-		return y + w / 2;
-	}
-	void setCenterY(float center_y)
-	{
-		y = center_y - h / 2;
-	}
-	Vec2 getPosition(void) const
-	{
-		Vec2 point;
-		point.x = x;
-		point.y = y;
-		return point;
-	}
-	float getTop(void) const
-	{
-		return y;
-	}
-	float getBottom(void) const
-	{
-		return y + w;
-	}
-	float getLeft(void) const
-	{
-		return x;
-	}
-	float getRight(void) const
-	{
-		return x + w;
-	}
-	bool contains(Vec2 const & p)const
-	{
-		return p.x >= x && p.x <= (x + w) &&
-			p.y >= y && p.y <= (y + h);
-	}
-};
 struct Gun{
 	bool fire;
 	float wait_time;
