@@ -1,5 +1,7 @@
 #ifndef Rect_H
 #define Rect_H
+#include "Vec2.h"
+#include "Size.h"
 namespace{
 struct Rect{
 	float x, y;
@@ -22,9 +24,8 @@ struct Rect{
 		w = W;
 		h = H;
 	}
-	Rect(void): x(0), y(0), w(0), h(0)
-	{
-	}
+	Rect(Vec2 const & vec, Size const & size): x(vec.x), y(vec.y), w(size.w), h(size.h) {}
+	Rect(void): x(0), y(0), w(0), h(0) {}
 	Vec2 getCenter(void) const
 	{
 		Vec2 point;
@@ -72,6 +73,17 @@ struct Rect{
 	{
 		return p.x >= x && p.x <= (x + w) &&
 			p.y >= y && p.y <= (y + h);
+	}
+	bool disjoint(Rect const & r)const
+	{
+		return getRight() <= r.getLeft() ||
+			getLeft() >= r.getRight() ||
+			getBottom() <= r.getTop() ||
+			getTop() >= r.getBottom();
+	}
+	bool intersects(Rect const & r) const
+	{
+		return not disjoint(r);
 	}
 };
 }

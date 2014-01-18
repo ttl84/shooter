@@ -1,5 +1,6 @@
 #ifndef Vec2_H
 #define Vec2_H
+#include <cmath>
 namespace{
 struct Vec2{
 	float x, y;
