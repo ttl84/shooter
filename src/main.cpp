@@ -90,12 +90,13 @@ namespace ecs{
 		GUN = BIT(7),
 		SIZE = BIT(8),
 		FACTION = BIT(9),
-		KEYBOARD_CONTROL = BIT(10)
+		KEYBOARD_CONTROL = BIT(10),
+		CAMERA_FOCUS = BIT(11)
 	};
 	mask_t constexpr move_mask = POSITION | VELOCITY;
 	mask_t constexpr collision_damage_mask = POSITION | SIZE | COLLISION_DAMAGE | FACTION;
 	mask_t constexpr shooter_mask = POSITION | SIZE | GUN;
-	mask_t constexpr player_mask = move_mask | shooter_mask | collision_damage_mask | IMAGE | HEALTH | KEYBOARD_CONTROL;
+	mask_t constexpr player_mask = move_mask | shooter_mask | collision_damage_mask | IMAGE | HEALTH | KEYBOARD_CONTROL | CAMERA_FOCUS;
 	mask_t constexpr enemy_mask = move_mask | shooter_mask | collision_damage_mask | IMAGE | ENEMY_CONTROL | HEALTH;
 	mask_t constexpr bullet_mask = move_mask | collision_damage_mask | IMAGE | LIFESPAN | HEALTH;
 	
@@ -220,7 +221,6 @@ unsigned window_height = 320;
 SDL_Surface * screen = NULL;
 Rect camera;
 
-ecs::entity_t player;
 
 ecs::Entity<1000> entities;
 std::deque<Vec2> stars;
@@ -283,7 +283,7 @@ void handle_event(void)
 }
 void spawn_player(void)
 {
-	player = entities.claim();
+	ecs::entity_t player = entities.claim();
 	
 	entities.mask[player] = ecs::player_mask;
 	
@@ -433,10 +433,6 @@ void bullet_process(float dt)
 		if((entities.mask[i] & ecs::bullet_mask) == ecs::bullet_mask)
 		{
 			entities.lifespan[i] -= dt;
-			if(entities.lifespan[i] < 0)
-			{
-				entities.remove(i);
-			}
 		}
 	}
 }
@@ -477,21 +473,27 @@ void death_process(void)
 {
 	for(unsigned i = 0; i < entities.count(); i++)
 	{
-		if((entities.mask[i] & ecs::HEALTH) == ecs::HEALTH)
-		{
-			if(entities.health[i] <= 0)
+		if(((entities.mask[i] & ecs::HEALTH) == ecs::HEALTH && entities.health[i] <= 0) ||
+			((entities.mask[i] & ecs::LIFESPAN) == ecs::LIFESPAN && entities.lifespan[i] <= 0))
 				entities.remove(i);
-		}
 	}
 }
 void update_camera(void)
 {
-	camera.setCenterY(floor(entities.position[player].y));
+	for(ecs::entity_t i = 0; i < entities.count(); i++)
+	{
+		if((entities.mask[i] & ecs::CAMERA_FOCUS) == ecs::CAMERA_FOCUS)
+		{
+			camera.setCenterY(floor(entities.position[i].y));
+			return;
+		}
+	}
+			
 }
 
 void despawn_enemy(void)
 {
-	for(unsigned i = 0; i < entities.count(); i++)
+	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
 		if((entities.mask[i] & ecs::enemy_mask) == ecs::enemy_mask)
 		{
@@ -502,12 +504,9 @@ void despawn_enemy(void)
 }
 void spawn_star(void)
 {
-	if((rand() % 1000) < 10)
+	if((rand() % 1000) < 10 && stars.size() < 100)
 	{
-		Vec2 star;
-		star.y = entities.position[player].y - window_height / 2;
-		star.x = rand() % window_width;
-		stars.push_back(star);
+		stars.push_back(Vec2(rand() % window_width, camera.y - 10));
 	}
 }
 void despawn_star(void)
