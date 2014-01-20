@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <vector>
 #include <deque>
-#include <map>
 #include <stack>
 #include <string>
 #include <SDL2/SDL.h>
@@ -12,6 +11,7 @@
 #include "Size.h"
 #include "Rect.h"
 #include "PI.h"
+#include "TextureStorage.h"
 std::string const player_pixels = "\
         *        \n\
         *        \n\
@@ -163,58 +163,6 @@ namespace ecs{
 
 }
 
-
-
-SDL_Texture * texture_from_string(std::string const & pixels, SDL_Renderer * renderer)
-{
-	static std::map<std::string, SDL_Texture*> cache;
-	if(cache.find(pixels) != cache.end())
-		return cache[pixels];
-	unsigned width = 0;
-	for(unsigned i = 0; i < pixels.length(); i++)
-	{
-		if(pixels[i] == '\n')
-			break;
-		else
-			width++;
-	}
-	
-	unsigned height = 1;
-	for(unsigned i = 0; i < pixels.length(); i++)
-	{
-		if(pixels[i] == '\n')
-			height++;
-	}
-	
-	SDL_Surface * surface = SDL_CreateRGBSurface(0, width, height, 32, 0, 0, 0, 0);
-	SDL_SetColorKey(surface, SDL_TRUE, SDL_MapRGB(surface->format, 255, 0, 0));
-
-	if(surface == NULL)
-		return NULL;
-	Uint32 * data = (Uint32*)(surface->pixels);
-	
-	SDL_LockSurface(surface);
-	unsigned i = 0;
-	for(auto iter = pixels.begin(); i < width * height && iter != pixels.end(); ++iter)
-	{
-		if(*iter != '\n')
-		{
-			if(*iter == '*')
-				data[i] = SDL_MapRGB(surface->format, 255, 255, 255);
-			else
-				data[i] = SDL_MapRGB(surface->format, 255, 0, 0);
-			i++;
-		}
-	}
-	SDL_UnlockSurface(surface);
-	
-	SDL_Texture * texture = SDL_CreateTextureFromSurface(renderer, surface);
-	if(texture != NULL)
-		SDL_FreeSurface(surface);
-	cache[pixels] = texture;
-	return texture;
-}
-
 bool running = true;
 float const dt_unit = 1.0 / 1000.0;
 unsigned window_width = 320;
@@ -228,8 +176,7 @@ Rect camera;
 ecs::Entity<1000> entities;
 std::deque<Vec2> stars;
 
-std::map<std::string, SDL_Texture*> texture_cache;
-
+TextureStorage textures;
 
 namespace control{
 	bool faster = false;
@@ -290,7 +237,7 @@ void spawn_player(void)
 	
 	entities.mask[player] = ecs::player_mask;
 	
-	entities.image[player] = texture_from_string(player_pixels, renderer);
+	entities.image[player] = textures.load(player_pixels);
 	
 	int w, h;
 	SDL_QueryTexture(entities.image[player], NULL, NULL, &w, &h);
@@ -319,7 +266,7 @@ void spawn_enemy(void)
 		
 		entities.mask[enemy] = ecs::enemy_mask;
 		
-		entities.image[enemy] = texture_from_string(enemy_pixels, renderer);
+		entities.image[enemy] = textures.load(enemy_pixels);
 		
 		int w, h;
 		SDL_QueryTexture(entities.image[enemy], NULL, NULL, &w, &h);
@@ -420,7 +367,7 @@ void shooter_process(float dt)
 				}
 				
 				entities.velocity[bullet] = entities.velocity[i] + entities.gun[i].bullet_speed * Vec2(entities.direction[i]);
-				entities.image[bullet] = texture_from_string(bullet_pixels, renderer);
+				entities.image[bullet] = textures.load(bullet_pixels);
 				entities.lifespan[bullet] = 5.0;
 				entities.health[bullet] = 1;
 				entities.collision_damage[bullet] = 1;
@@ -536,9 +483,10 @@ void update(float const dt)
 }
 void draw(void)
 {
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	SDL_RenderClear(renderer);
 	// draw stars
-	SDL_Texture * star_tex = texture_from_string(star_pixels, renderer);
+	SDL_Texture * star_tex = textures.load(star_pixels);
 	for(auto i = stars.begin(); i != stars.end(); ++i)
 	{
 		SDL_Rect position;
@@ -549,8 +497,8 @@ void draw(void)
 	}
 	
 	// draw entities (space fighters and bullets)
-	unsigned draw_mask = ecs::POSITION | ecs::IMAGE;
-	for(unsigned i = 0; i < entities.count(); i++)
+	ecs::mask_t draw_mask = ecs::POSITION | ecs::IMAGE;
+	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
 		if((entities.mask[i] & draw_mask) == draw_mask)
 		{
@@ -567,27 +515,35 @@ void draw(void)
 void init_system(void)
 {
 	SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER);
+	
+}
+void init_state(void)
+{
 	screen = SDL_CreateWindow("shooter game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_width, window_height, 0);
 	renderer = SDL_CreateRenderer(screen, -1, 0);
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-}
-void init_camera(void)
-{
+	
 	camera = Rect(0, 0, window_width, window_height);
+	
+	textures = TextureStorage(renderer);
 }
 
 
-void cleanup_system(void)
+void cleanup_state(void)
 {
 	SDL_DestroyRenderer(renderer);
+	renderer = NULL;
 	SDL_DestroyWindow(screen);
+	screen = NULL;
+}
+void cleanup_system(void)
+{
 	SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER);
 	SDL_Quit();
 }
 int main(int argc, char ** argv)
 {
 	init_system();
-	init_camera();
+	init_state();
 	
 	spawn_player();
 	
@@ -610,6 +566,7 @@ int main(int argc, char ** argv)
 		if(dt > 0.030)
 			dt = 0.020;
 	}
+	cleanup_state();
 	cleanup_system();
 	return 0;
 }
