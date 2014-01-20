@@ -52,7 +52,7 @@ std::string const bullet_pixels = "\
 *\n\
 *";
 
-
+std::string const star_pixels = "*";
 
 
 // Rect represents a rectangle with top left corner as (x, y)
@@ -537,7 +537,16 @@ void update(float const dt)
 void draw(void)
 {
 	SDL_RenderClear(renderer);
-	
+	// draw stars
+	SDL_Texture * star_tex = texture_from_string(star_pixels, renderer);
+	for(auto i = stars.begin(); i != stars.end(); ++i)
+	{
+		SDL_Rect position;
+		position.x = i->x - camera.x;
+		position.y = i->y - camera.y;
+		SDL_QueryTexture(star_tex, NULL, NULL, &position.w, &position.h);
+		SDL_RenderCopy(renderer, star_tex, NULL, &position);
+	}
 	
 	// draw entities (space fighters and bullets)
 	unsigned draw_mask = ecs::POSITION | ecs::IMAGE;
@@ -557,10 +566,8 @@ void draw(void)
 }
 void init_system(void)
 {
-	SDL_InitSubSystem(SDL_INIT_VIDEO |
-		SDL_INIT_EVENTS |
-		SDL_INIT_TIMER);
-	screen = SDL_CreateWindow("shooter game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_width, window_height, SDL_WINDOW_OPENGL);
+	SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER);
+	screen = SDL_CreateWindow("shooter game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_width, window_height, 0);
 	renderer = SDL_CreateRenderer(screen, -1, 0);
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 }
@@ -572,6 +579,8 @@ void init_camera(void)
 
 void cleanup_system(void)
 {
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyWindow(screen);
 	SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER);
 	SDL_Quit();
 }
