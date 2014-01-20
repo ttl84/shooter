@@ -43,5 +43,25 @@ Vec2 const operator*(float k, Vec2 const & a)
 {
 	return Vec2(a.x * k, a.y * k);
 }
+Vec2 const & operator *=(Vec2 & a, float k)
+{
+	a.x *= k;
+	a.y *= k;
+	return a;
+}
+Vec2 const operator/(Vec2 const & a, float k)
+{
+	return Vec2(a.x / k, a.y / k);
+}
+Vec2 const operator/(float k, Vec2 const & a)
+{
+	return Vec2(a.x / k, a.y / k);
+}
+Vec2 const & operator /=(Vec2 & a, float k)
+{
+	a.x /= k;
+	a.y /= k;
+	return a;
+}
 }
 #endif

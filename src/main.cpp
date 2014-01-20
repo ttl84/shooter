@@ -22,10 +22,10 @@ std::string const player_pixels = "\
       * * *      \n\
       * * *      \n\
      * * * *     \n\
-     * * * *     \n\
+     *     *     \n\
+    * *   * *    \n\
    ** *   * **   \n\
-   ** *   * **   \n\
-**  * *   * *  **\n\
+ *  * *   * *  * \n\
 **  * *   * *  **\n\
    **  ***  **   \n\
    **  ***  **   ";
@@ -184,7 +184,11 @@ namespace control{
 	bool fire = false;
 }
 
-
+namespace player_speed{
+	float normal = 20;
+	float fast = 50;
+	float slow = 10;
+}
 
 
 void handle_event(void)
@@ -292,32 +296,36 @@ void keyboard_control(void)
 	while(not (entities.mask[i] & ecs::KEYBOARD_CONTROL) == ecs::KEYBOARD_CONTROL)
 		i++;
 	
+	float speed;
 	if(control::faster)
 	{
-		entities.velocity[i].y = -50;
+		speed = player_speed::fast;
 	}
 	else if(control::slower)
 	{
-		entities.velocity[i].y = -10;
+		speed = player_speed::slow;
 	}
 	else
 	{
-		entities.velocity[i].y = -20;
+		speed = player_speed::normal;
 	}
 	
 	if(control::left)
 	{
-		entities.velocity[i].x = -50;
+		entities.velocity[i].x = -1;
 	}
 	else if(control::right)
 	{
-		entities.velocity[i].x = 50;
+		entities.velocity[i].x = 1;
 	}
 	else
 	{
 		entities.velocity[i].x = 0;
 	}
-	
+	entities.velocity[i].y = -1;
+	entities.velocity[i] /= entities.velocity[i].norm();
+	entities.velocity[i] *= speed;
+	entities.direction[i] = entities.velocity[i].angle();
 	if(control::fire)
 	{
 		entities.gun[i].fire = true;
@@ -326,10 +334,11 @@ void keyboard_control(void)
 	{
 		entities.gun[i].fire = false;
 	}
+	
 }
 void shooter_process(float dt)
 {
-	for(unsigned i = 0; i < entities.count(); i++)
+	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
 		if((entities.mask[i] & ecs::shooter_mask) == ecs::shooter_mask)
 		{
@@ -376,7 +385,7 @@ void shooter_process(float dt)
 }
 void bullet_process(float dt)
 {
-	for(unsigned i = 0; i < entities.count(); i++)
+	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
 		if((entities.mask[i] & ecs::bullet_mask) == ecs::bullet_mask)
 		{
@@ -387,7 +396,7 @@ void bullet_process(float dt)
 void move_process(float dt)
 {
 	
-	for(unsigned i = 0; i < entities.count(); i++)
+	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
 		if((entities.mask[i] & ecs::move_mask) == ecs::move_mask)
 		{
@@ -397,12 +406,12 @@ void move_process(float dt)
 }
 void collision_damage_process(void)
 {
-	for(unsigned i = 0; i < entities.count(); i++)
+	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
 		if((entities.mask[i] & ecs::collision_damage_mask) == ecs::collision_damage_mask)
 		{
 			Rect rectA(entities.position[i], entities.size[i]);
-			for(unsigned j = i + 1; j < entities.count(); j++)
+			for(ecs::entity_t j = i + 1; j < entities.count(); j++)
 			{
 				if((entities.mask[j] & ecs::collision_damage_mask) == ecs::collision_damage_mask)
 				{
@@ -419,7 +428,7 @@ void collision_damage_process(void)
 }
 void death_process(void)
 {
-	for(unsigned i = 0; i < entities.count(); i++)
+	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
 		if(((entities.mask[i] & ecs::HEALTH) == ecs::HEALTH && entities.health[i] <= 0) ||
 			((entities.mask[i] & ecs::LIFESPAN) == ecs::LIFESPAN && entities.lifespan[i] <= 0))
@@ -472,7 +481,9 @@ void update(float const dt)
 	move_process(dt);
 	collision_damage_process();
 	death_process();
+	
 	update_camera();
+	
 	spawn_enemy();
 	despawn_enemy();
 	spawn_star();
