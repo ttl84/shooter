@@ -7,22 +7,18 @@ struct Rect{
 	float x, y;
 	float w, h;
 	
-	Rect(float X, float Y, float W, float H)
+	Rect(float X, float Y, float W, float H) : x(X), y(Y), w(W), h(H)
 	{
-		if(W < 0)
+		if(w < 0)
 		{
-			X += W;
-			W = -W;
+			x += w;
+			w = -w;
 		}
-		if(H < 0)
+		if(h < 0)
 		{
-			Y += H;
-			H = -H;
+			y += h;
+			h = -h;
 		}
-		x = X;
-		y = Y;
-		w = W;
-		h = H;
 	}
 	Rect(Vec2 const & vec, Size const & size): x(vec.x), y(vec.y), w(size.w), h(size.h) {}
 	Rect(void): x(0), y(0), w(0), h(0) {}

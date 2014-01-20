@@ -54,8 +54,6 @@ std::string const bullet_pixels = "\
 
 std::string const star_pixels = "*";
 
-
-// Rect represents a rectangle with top left corner as (x, y)
 struct Gun{
 	bool fire;
 	float wait_time;
