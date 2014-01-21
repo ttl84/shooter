@@ -5,11 +5,14 @@
 #include <deque>
 #include <stack>
 #include <string>
+#include <sstream>
+
 #include <SDL2/SDL.h>
 
 #include "Vec2.h"
 #include "Size.h"
 #include "Rect.h"
+#include "Circ.h"
 #include "PI.h"
 #include "TextureStorage.h"
 #include "CharImg.h"
@@ -17,6 +20,7 @@ CharImg const player_pixels("\
         *        \n\
         *        \n\
        * *       \n\
+       ***       \n\
        * *       \n\
        * *       \n\
        * *       \n\
@@ -186,9 +190,9 @@ namespace control{
 }
 
 namespace player_speed{
-	float normal = 20;
-	float fast = 50;
-	float slow = 10;
+	float normal = 50;
+	float fast = 100;
+	float slow = 30;
 }
 
 
@@ -361,19 +365,19 @@ void shooter_process(float dt)
 				// alternating fire
 				if(entities.gun[i].side == Gun::Side::LEFT)
 				{
-					entities.position[bullet] = entities.position[i];
+					entities.position[bullet] = entities.position[i] - Vec2(entities.size[i].w / 2, 0);
 					entities.gun[i].side = Gun::Side::RIGHT;
 				}
 				else if(entities.gun[i].side == Gun::Side::RIGHT)
 				{
-					entities.position[bullet] = entities.position[i] + Vec2(entities.size[i].w, 0);
+					entities.position[bullet] = entities.position[i] + Vec2(entities.size[i].w / 2, 0);
 					entities.gun[i].side = Gun::Side::LEFT;
 				}
 				
 				// concentrated fire
 				else if(entities.gun[i].side == Gun::Side::CENTER)
 				{
-					entities.position[bullet] = entities.position[i] + Vec2(entities.size[i].w / 2, 0);
+					entities.position[bullet] = entities.position[i];
 				}
 				
 				entities.velocity[bullet] = entities.velocity[i] + entities.gun[i].bullet_speed * Vec2(entities.direction[i]);
@@ -409,22 +413,26 @@ void move_process(float dt)
 }
 void collision_damage_process(void)
 {
+	std::vector<ecs::entity_t> objs;
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
 		if((entities.mask[i] & ecs::collision_damage_mask) == ecs::collision_damage_mask)
 		{
-			Rect rectA(entities.position[i], entities.size[i]);
-			for(ecs::entity_t j = i + 1; j < entities.count(); j++)
+			objs.push_back(i);
+		}
+	}
+	for(auto iiter = objs.begin(); iiter != objs.end(); ++iiter)
+	{
+		ecs::entity_t i = *iiter;
+		Circ shapeA(entities.position[i], entities.size[i].w / 2.5);
+		for(auto jiter = iiter + 1; jiter != objs.end(); ++jiter)
+		{
+			ecs::entity_t j = *jiter;
+			Circ shapeB(entities.position[j], entities.size[j].w / 2.5);
+			if(shapeA.intersects(shapeB) && entities.faction[i] != entities.faction[j])
 			{
-				if((entities.mask[j] & ecs::collision_damage_mask) == ecs::collision_damage_mask)
-				{
-					Rect rectB(entities.position[j], entities.size[j]);
-					if(rectA.intersects(rectB) && entities.faction[i] != entities.faction[j])
-					{
-						entities.health[i] -= entities.collision_damage[j];
-						entities.health[j] -= entities.collision_damage[i];
-					}
-				}
+				entities.health[i] -= entities.collision_damage[j];
+				entities.health[j] -= entities.collision_damage[i];
 			}
 		}
 	}
@@ -515,9 +523,9 @@ void draw(void)
 		if((entities.mask[i] & draw_mask) == draw_mask)
 		{
 			SDL_Rect position;
-			position.x = entities.position[i].x - camera.x;
-			position.y = entities.position[i].y - camera.y;
 			SDL_QueryTexture(entities.image[i], NULL, NULL, &position.w, &position.h);
+			position.x = int(entities.position[i].x) - position.w / 2 - int(camera.x);
+			position.y = int(entities.position[i].y) - position.h / 2 - int(camera.y);
 			SDL_RenderCopyEx(renderer, entities.image[i], NULL, &position, (entities.direction[i] + PI / 2.0) * 180 / PI, NULL, SDL_FLIP_NONE);
 		}
 	}
@@ -561,11 +569,14 @@ int main(int argc, char ** argv)
 	
 	Uint32 frame_begin = 0, frame_end = 0;
 	float dt = 0.017;
+	static char title[50];
 	while(running)
 	{
 		frame_begin = frame_end;
 		
 		handle_event();
+		if(dt > 0.030)
+			dt = 0.020;
 		while(dt > 0)
 		{
 			update(dt_unit);
@@ -575,8 +586,8 @@ int main(int argc, char ** argv)
 		
 		frame_end = SDL_GetTicks();
 		dt += (float)(frame_end - frame_begin) / 1000.0;
-		if(dt > 0.030)
-			dt = 0.020;
+		snprintf(title, sizeof title,  "%f", dt);
+		SDL_SetWindowTitle(screen, title);
 	}
 	cleanup_state();
 	cleanup_system();

@@ -2,7 +2,6 @@
 #define Rect_H
 #include "Vec2.h"
 #include "Size.h"
-namespace{
 struct Rect{
 	float x, y;
 	float w, h;
@@ -82,5 +81,4 @@ struct Rect{
 		return not disjoint(r);
 	}
 };
-}
 #endif
