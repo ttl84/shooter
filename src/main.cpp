@@ -257,7 +257,7 @@ void spawn_player(void)
 	entities.gun[player].side = Gun::Side::LEFT;
 	entities.gun[player].delay = 0.1;
 	entities.gun[player].direction = Vec2(0, -1);
-	entities.gun[player].bullet_speed = 100;
+	entities.gun[player].bullet_speed = 150;
 	
 	entities.health[player] = 3;
 	
@@ -382,7 +382,7 @@ void shooter_process(float dt)
 				
 				entities.velocity[bullet] = entities.velocity[i] + entities.gun[i].bullet_speed * Vec2(entities.direction[i]);
 				entities.image[bullet] = textures.load(bullet_pixels, {{'*', {255, 255, 0}}}, {255, 0, 0});
-				entities.lifespan[bullet] = 5.0;
+				entities.lifespan[bullet] = 4.0;
 				entities.health[bullet] = 1;
 				entities.collision_damage[bullet] = 1;
 				entities.faction[bullet] = entities.faction[i];
@@ -413,23 +413,25 @@ void move_process(float dt)
 }
 void collision_damage_process(void)
 {
-	std::vector<ecs::entity_t> objs;
+	std::vector<ecs::entity_t> players;
+	std::vector<ecs::entity_t> enemies;
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
 		if((entities.mask[i] & ecs::collision_damage_mask) == ecs::collision_damage_mask)
 		{
-			objs.push_back(i);
+			if(entities.faction[i] == Faction::PLAYER)
+				players.push_back(i);
+			else if(entities.faction[i] == Faction::ENEMY)
+				enemies.push_back(i);
 		}
 	}
-	for(auto iiter = objs.begin(); iiter != objs.end(); ++iiter)
+	for(ecs::entity_t i : players)
 	{
-		ecs::entity_t i = *iiter;
 		Circ shapeA(entities.position[i], entities.size[i].w / 2.5);
-		for(auto jiter = iiter + 1; jiter != objs.end(); ++jiter)
+		for(ecs::entity_t j : enemies)
 		{
-			ecs::entity_t j = *jiter;
 			Circ shapeB(entities.position[j], entities.size[j].w / 2.5);
-			if(shapeA.intersects(shapeB) && entities.faction[i] != entities.faction[j])
+			if(shapeA.intersects(shapeB))
 			{
 				entities.health[i] -= entities.collision_damage[j];
 				entities.health[j] -= entities.collision_damage[i];
