@@ -12,7 +12,8 @@
 #include "Rect.h"
 #include "PI.h"
 #include "TextureStorage.h"
-std::string const player_pixels = "\
+#include "CharImg.h"
+CharImg const player_pixels("\
         *        \n\
         *        \n\
        * *       \n\
@@ -21,16 +22,16 @@ std::string const player_pixels = "\
        * *       \n\
       * * *      \n\
       * * *      \n\
-     * * * *     \n\
+     *******     \n\
      *     *     \n\
     * *   * *    \n\
-   ** *   * **   \n\
+   ***********   \n\
  *  * *   * *  * \n\
 **  * *   * *  **\n\
    **  ***  **   \n\
-   **  ***  **   ";
+   **  ***  **   ");
 
-std::string const enemy_pixels = "\
+CharImg const enemy_pixels("\
         *        \n\
         *        \n\
        * *       \n\
@@ -47,12 +48,12 @@ std::string const enemy_pixels = "\
 **     ***     **\n\
  *      *      * \n\
  *      *      * \n\
-        *        ";
-std::string const bullet_pixels = "\
+        *        ");
+CharImg const bullet_pixels("\
 *\n\
-*";
+*");
 
-std::string const star_pixels = "*";
+CharImg const star_pixels("*");
 
 struct Gun{
 	bool fire;
@@ -239,7 +240,7 @@ void spawn_player(void)
 	
 	entities.mask[player] = ecs::player_mask;
 	
-	entities.image[player] = textures.load(player_pixels);
+	entities.image[player] = textures.load(player_pixels, {{'*', {255, 255, 255}}}, {255, 0, 0});
 	
 	int w, h;
 	SDL_QueryTexture(entities.image[player], NULL, NULL, &w, &h);
@@ -268,7 +269,7 @@ void spawn_enemy(void)
 		
 		entities.mask[enemy] = ecs::enemy_mask;
 		
-		entities.image[enemy] = textures.load(enemy_pixels);
+		entities.image[enemy] = textures.load(enemy_pixels, {{'*', {0, 0, 255}}}, {255, 0, 0});
 		
 		int w, h;
 		SDL_QueryTexture(entities.image[enemy], NULL, NULL, &w, &h);
@@ -293,9 +294,11 @@ void keyboard_control(void)
 {
 	// finds the entity with keyboard control privilege
 	ecs::entity_t i = 0;
-	while(not (entities.mask[i] & ecs::KEYBOARD_CONTROL) == ecs::KEYBOARD_CONTROL)
-		i++;
-	
+	for(i = 0; i < entities.count(); i++)
+		if((entities.mask[i] & ecs::KEYBOARD_CONTROL) == ecs::KEYBOARD_CONTROL)
+			break;
+	if(i == entities.count())
+		return;
 	float speed;
 	if(control::faster)
 	{
@@ -374,7 +377,7 @@ void shooter_process(float dt)
 				}
 				
 				entities.velocity[bullet] = entities.velocity[i] + entities.gun[i].bullet_speed * Vec2(entities.direction[i]);
-				entities.image[bullet] = textures.load(bullet_pixels);
+				entities.image[bullet] = textures.load(bullet_pixels, {{'*', {255, 255, 0}}}, {255, 0, 0});
 				entities.lifespan[bullet] = 5.0;
 				entities.health[bullet] = 1;
 				entities.collision_damage[bullet] = 1;
@@ -495,7 +498,7 @@ void draw(void)
 	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 	SDL_RenderClear(renderer);
 	// draw stars
-	SDL_Texture * star_tex = textures.load(star_pixels);
+	SDL_Texture * star_tex = textures.load(star_pixels, {{'*', {120, 120, 120}}}, {255, 0, 0});
 	for(auto i = stars.begin(); i != stars.end(); ++i)
 	{
 		SDL_Rect position;

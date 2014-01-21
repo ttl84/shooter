@@ -1,24 +1,12 @@
 #include "TextureStorage.h"
-SDL_Surface * surface_from_string(std::string const & pixels, std::map<char, Uint32> const & pixelmap, Uint32 colorkey, char delim)
+#include "CharImg.h"
+#include <iostream>
+SDL_Surface * surface_from_string(CharImg const & ci, std::map<char, Pixel> const & pixelmap, Pixel colorkey)
 {
-	unsigned width = 0;
-	for(unsigned i = 0; i < pixels.length(); i++)
-	{
-		if(pixels[i] == delim)
-			break;
-		else
-			width++;
-	}
-	
-	unsigned height = 1;
-	for(unsigned i = 0; i < pixels.length(); i++)
-	{
-		if(pixels[i] == '\n')
-			height++;
-	}
-	
+	unsigned width = ci.width();
+	unsigned height = ci.height();
 	SDL_Surface * surface = SDL_CreateRGBSurface(0, width, height, 32, 0, 0, 0, 0);
-	SDL_SetColorKey(surface, SDL_TRUE, colorkey);
+	SDL_SetColorKey(surface, SDL_TRUE, SDL_MapRGB(surface->format, colorkey.r, colorkey.g, colorkey.b));
 	
 	if(surface == NULL)
 		return NULL;
@@ -26,47 +14,33 @@ SDL_Surface * surface_from_string(std::string const & pixels, std::map<char, Uin
 	
 	SDL_LockSurface(surface);
 	unsigned i = 0;
-	for(auto iter = pixels.begin(); i < width * height && iter != pixels.end(); ++iter)
+	for(char c : ci.chars())
 	{
-		if(*iter != delim)
-		{
-			if(pixelmap.find(*iter) == pixelmap.end())
-				data[i] = colorkey;
-			else
-				data[i] = pixelmap.at(*iter);
-			i++;
-		}
+		Pixel pix = (pixelmap.find(c) == pixelmap.end() ? colorkey : pixelmap.at(c));
+		data[i] = SDL_MapRGB(surface->format, pix.r, pix.g, pix.b);
+		i++;
 	}
 	SDL_UnlockSurface(surface);
 	return surface;
 }
-SDL_Texture * TextureStorage::load(std::string const & pixels, std::map<char, Uint32> const & pixelmap, Uint32 colorkey, char delim)
+SDL_Texture * TextureStorage::load(CharImg const & ci, std::map<char, Pixel> const & pixelmap, Pixel colorkey)
 {
 	if(renderer == NULL)
 		return NULL;
 	SDL_Texture * texture = NULL;
-	if(cache.find(pixels) == cache.end())
+	if(cache.find(ci) == cache.end())
 	{
-		SDL_Surface * surface = surface_from_string(pixels, pixelmap, colorkey, delim);
+		std::cout << "loading new texture of width " << ci.width() << " and height " << ci.height() << '\n';
+		SDL_Surface * surface = surface_from_string(ci, pixelmap, colorkey);
 		if(surface != NULL)
 		{
 			texture = SDL_CreateTextureFromSurface(renderer, surface);
 			SDL_FreeSurface(surface);
 		}
 		if(texture != NULL)
-			cache[pixels] = texture;
+			cache.insert({ci, texture});
 	}
 	else
-		texture = cache[pixels];
-	return texture;
-}
-SDL_Texture * TextureStorage::load(std::string const & pixels)
-{
-	SDL_Surface * surface = SDL_CreateRGBSurface(0, 1, 1, 32, 0, 0, 0, 0);
-	std::map<char, Uint32> pixelmap{{'*',SDL_MapRGB(surface->format, 255, 255, 255)}};
-	
-	SDL_Texture * texture = load(pixels, pixelmap,
-		SDL_MapRGB(surface->format, 255, 0, 0), '\n');
-	SDL_FreeSurface(surface);
+		texture = cache.at(ci);
 	return texture;
 }
