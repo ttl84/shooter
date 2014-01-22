@@ -20,20 +20,20 @@ CharImg const player_pixels("\
         *        \n\
         *        \n\
        * *       \n\
-       ***       \n\
-       * *       \n\
-       * *       \n\
-       * *       \n\
-      * * *      \n\
-      * * *      \n\
+      ** **      \n\
+      ** **      \n\
+     **   **     \n\
+     ** * **     \n\
+     ** * **     \n\
+      *****      \n\
      *******     \n\
-     *     *     \n\
-    * *   * *    \n\
-   ***********   \n\
- *  * *   * *  * \n\
-**  * *   * *  **\n\
-   **  ***  **   \n\
-   **  ***  **   ");
+    * ***** *    \n\
+   *   ***   *   \n\
+  *  * *** *  *  \n\
+ ** *   *   * ** \n\
+ ***   ***   *** \n\
+  **         **  \n\
+    *       *    ");
 
 CharImg const enemy_pixels("\
         *        \n\
@@ -87,27 +87,28 @@ namespace ecs{
 	enum flag{
 		POSITION = BIT(0),
 		VELOCITY = BIT(1),
-		DIRECTION = BIT(2),
-		SIZE = BIT(3),
+		ACCELERATION = BIT(2),
+		DIRECTION = BIT(3),
+		SIZE = BIT(4),
 		
-		IMAGE = BIT(4),
+		IMAGE = BIT(5),
 		
-		HEALTH = BIT(5),
-		LIFESPAN = BIT(6),
-		COLLISION_DAMAGE = BIT(7),
+		HEALTH = BIT(6),
+		LIFESPAN = BIT(7),
+		COLLISION_DAMAGE = BIT(8),
 		
-		ENEMY_CONTROL = BIT(8),
-		KEYBOARD_CONTROL = BIT(9),
+		ENEMY_CONTROL = BIT(9),
+		KEYBOARD_CONTROL = BIT(10),
 		
-		FACTION = BIT(10),
-		GUN = BIT(11),
-		CAMERA_FOCUS = BIT(12)
+		FACTION = BIT(11),
+		GUN = BIT(12),
+		CAMERA_FOCUS = BIT(13)
 		
 	};
 	mask_t constexpr move_mask = POSITION | VELOCITY;
 	mask_t constexpr collision_damage_mask = POSITION | SIZE | COLLISION_DAMAGE | FACTION;
 	mask_t constexpr shooter_mask = POSITION | DIRECTION | SIZE | GUN;
-	mask_t constexpr player_mask = move_mask | shooter_mask | collision_damage_mask | IMAGE | HEALTH | KEYBOARD_CONTROL | CAMERA_FOCUS;
+	mask_t constexpr player_mask = move_mask | ACCELERATION | shooter_mask | collision_damage_mask | IMAGE | HEALTH | KEYBOARD_CONTROL | CAMERA_FOCUS;
 	mask_t constexpr enemy_mask = move_mask | shooter_mask | collision_damage_mask | IMAGE | ENEMY_CONTROL | HEALTH;
 	mask_t constexpr bullet_mask = move_mask | collision_damage_mask | IMAGE | LIFESPAN | HEALTH;
 	
@@ -116,6 +117,7 @@ namespace ecs{
 		mask_t mask[MAX_ENTITIES];
 		Vec2 position[MAX_ENTITIES];
 		Vec2 velocity[MAX_ENTITIES];
+		Vec2 acceleration[MAX_ENTITIES];
 		double direction[MAX_ENTITIES];
 		Size size[MAX_ENTITIES];
 		SDL_Texture * image[MAX_ENTITIES];
@@ -125,9 +127,7 @@ namespace ecs{
 		Gun gun[MAX_ENTITIES];
 		Faction faction[MAX_ENTITIES];
 		
-		Entity(void): mask({0}), image({NULL}), m_count(0)
-		{
-		}
+		Entity(void): mask{0}, image{NULL}, m_count(0) {}
 		entity_t claim(void)
 		{
 			
@@ -190,9 +190,9 @@ namespace control{
 }
 
 namespace player_speed{
-	float normal = 50;
-	float fast = 100;
-	float slow = 30;
+	float normal = 120;
+	float fast = 190;
+	float slow = 50;
 }
 
 
@@ -251,6 +251,8 @@ void spawn_player(void)
 	Rect player_rect(0, 0, w, h);
 	player_rect.setCenter(camera.getCenter());
 	entities.position[player] = player_rect.getPosition();
+	entities.velocity[player] = player_speed::normal * Vec2(0, -1);
+	entities.acceleration[player] = Vec2(0, 0);
 	entities.direction[player] = Vec2(0, -1).angle();
 	entities.size[player] = Size(w, h);
 	
@@ -303,35 +305,54 @@ void keyboard_control(void)
 			break;
 	if(i == entities.count())
 		return;
-	float speed;
+	auto setLength = [](Vec2 & v, float length){
+		float norm = v.norm();
+		if(norm != 0)
+		{
+			v /= norm;
+			v *= length;
+		}
+	};
+	
+	float speed = entities.velocity[i].norm();
+	if(fabs(entities.velocity[i].y) < player_speed::slow)
+		entities.velocity[i].y = -player_speed::slow;
+	if(speed > player_speed::fast)
+		setLength(entities.velocity[i], player_speed::fast);
+	else if(speed < player_speed::slow)
+		setLength(entities.velocity[i], player_speed::slow);
 	if(control::faster)
 	{
-		speed = player_speed::fast;
+		if(speed < player_speed::fast)
+			entities.acceleration[i].y = -1;
+		else
+			entities.acceleration[i].y = 0;
 	}
 	else if(control::slower)
 	{
-		speed = player_speed::slow;
+		if(speed > player_speed::slow)
+			entities.acceleration[i].y = 1;
+		else
+			entities.acceleration[i].y = 0;
 	}
 	else
 	{
-		speed = player_speed::normal;
+		entities.acceleration[i].y = 0;
 	}
 	
 	if(control::left)
 	{
-		entities.velocity[i].x = -1;
+		entities.acceleration[i].x = -1;
 	}
 	else if(control::right)
 	{
-		entities.velocity[i].x = 1;
+		entities.acceleration[i].x = 1;
 	}
 	else
 	{
-		entities.velocity[i].x = 0;
+		entities.acceleration[i].x = 0;
 	}
-	entities.velocity[i].y = -1;
-	entities.velocity[i] /= entities.velocity[i].norm();
-	entities.velocity[i] *= speed;
+	setLength(entities.acceleration[i], 100);
 	entities.direction[i] = entities.velocity[i].angle();
 	if(control::fire)
 	{
@@ -407,6 +428,7 @@ void move_process(float dt)
 	{
 		if((entities.mask[i] & ecs::move_mask) == ecs::move_mask)
 		{
+			entities.velocity[i] += dt * entities.acceleration[i];
 			entities.position[i] += dt * entities.velocity[i];
 		}
 	}
@@ -454,7 +476,7 @@ void update_camera(void)
 	{
 		if((entities.mask[i] & ecs::CAMERA_FOCUS) == ecs::CAMERA_FOCUS)
 		{
-			camera.setCenterY(floor(entities.position[i].y));
+			camera.setCenterY(floor(entities.position[i].y - entities.velocity[i].y - player_speed::normal));
 			return;
 		}
 	}
@@ -481,7 +503,7 @@ void spawn_star(void)
 }
 void despawn_star(void)
 {
-	while(stars.front().y > camera.getBottom())
+	while((not stars.empty()) && stars.front().y > camera.getBottom())
 	{
 		stars.pop_front();
 	}
