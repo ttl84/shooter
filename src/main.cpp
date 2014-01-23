@@ -60,17 +60,32 @@ CharImg const bullet_pixels("\
 CharImg const star_pixels("*");
 
 struct Gun{
-	bool fire;
-	float wait_time;
-	float delay;
-	enum class Side{
-		CENTER,
-		LEFT,
-		RIGHT
-	}side;
-	Vec2 direction;
+	float delay; // time to wait after every fire
 	float bullet_speed;
+	
+	float wait_time; // time left before the next fire
+	Vec2 direction;
+	bool fire;
+	Gun(void) : delay(0), bullet_speed(0), wait_time(0), fire(false) {}
 };
+Gun player_gun(void)
+{
+	Gun g;
+	g.delay = 0.1;
+	g.bullet_speed = 450;
+	g.wait_time = 0;
+	return g;
+}
+
+Gun basic_gun(void)
+{
+	Gun g;
+	g.delay = 0.8;
+	g.bullet_speed = 50;
+	g.wait_time = 0;
+	return g;
+}
+
 enum class Faction{
 	PLAYER,
 	ENEMY
@@ -168,8 +183,8 @@ namespace ecs{
 
 bool running = true;
 float const dt_unit = 1.0 / 1000.0;
-unsigned window_width = 320;
-unsigned window_height = 320;
+unsigned window_width = 640;
+unsigned window_height = 640;
 
 SDL_Window * screen = NULL;
 SDL_Renderer * renderer = NULL;
@@ -190,9 +205,9 @@ namespace control{
 }
 
 namespace player_speed{
-	float normal = 120;
-	float fast = 190;
+	float fast = 350;
 	float slow = 50;
+	float normal = (fast + slow) / 2.0;
 }
 
 
@@ -256,10 +271,7 @@ void spawn_player(void)
 	entities.direction[player] = Vec2(0, -1).angle();
 	entities.size[player] = Size(w, h);
 	
-	entities.gun[player].side = Gun::Side::LEFT;
-	entities.gun[player].delay = 0.1;
-	entities.gun[player].direction = Vec2(0, -1);
-	entities.gun[player].bullet_speed = 150;
+	entities.gun[player] = player_gun();
 	
 	entities.health[player] = 3;
 	
@@ -284,10 +296,7 @@ void spawn_enemy(void)
 		entities.direction[enemy] = Vec2(0, 1).angle();
 		entities.size[enemy] = Size(w, h);
 		
-		entities.gun[enemy].side = Gun::Side::CENTER;
-		entities.gun[enemy].delay = 1.0 / (float)(rand() % 3 + 1);
-		entities.gun[enemy].fire = true;
-		entities.gun[enemy].bullet_speed = 50;
+		entities.gun[enemy] = basic_gun();
 		
 		entities.health[enemy] = 3;
 		
@@ -305,33 +314,27 @@ void keyboard_control(void)
 			break;
 	if(i == entities.count())
 		return;
-	auto setLength = [](Vec2 & v, float length){
-		float norm = v.norm();
-		if(norm != 0)
-		{
-			v /= norm;
-			v *= length;
-		}
-	};
 	
 	float speed = entities.velocity[i].norm();
+	
+	// makes sure player  doesn't move backwards
+	if(fabs(entities.velocity[i].y) > player_speed::fast)
+		entities.velocity[i].y = player_speed::fast * -1;
 	if(fabs(entities.velocity[i].y) < player_speed::slow)
-		entities.velocity[i].y = -player_speed::slow;
-	if(speed > player_speed::fast)
-		setLength(entities.velocity[i], player_speed::fast);
-	else if(speed < player_speed::slow)
-		setLength(entities.velocity[i], player_speed::slow);
+		entities.velocity[i].y = player_speed::slow * -1;
+	
+	
 	if(control::faster)
 	{
 		if(speed < player_speed::fast)
-			entities.acceleration[i].y = -1;
+			entities.acceleration[i].y = -100;
 		else
 			entities.acceleration[i].y = 0;
 	}
 	else if(control::slower)
 	{
 		if(speed > player_speed::slow)
-			entities.acceleration[i].y = 1;
+			entities.acceleration[i].y = 100;
 		else
 			entities.acceleration[i].y = 0;
 	}
@@ -342,17 +345,16 @@ void keyboard_control(void)
 	
 	if(control::left)
 	{
-		entities.acceleration[i].x = -1;
+		entities.acceleration[i].x = (entities.velocity[i].x >= 0 ? -200 : -100);
 	}
 	else if(control::right)
 	{
-		entities.acceleration[i].x = 1;
+		entities.acceleration[i].x = (entities.velocity[i].x <= 0 ? 200 : 100);
 	}
 	else
 	{
-		entities.acceleration[i].x = 0;
+		entities.acceleration[i].x = -2 * entities.velocity[i].x;
 	}
-	setLength(entities.acceleration[i], 100);
 	entities.direction[i] = entities.velocity[i].angle();
 	if(control::fire)
 	{
@@ -382,24 +384,7 @@ void shooter_process(float dt)
 				unsigned bullet = entities.claim();
 				entities.mask[bullet] = ecs::bullet_mask;
 				
-				
-				// alternating fire
-				if(entities.gun[i].side == Gun::Side::LEFT)
-				{
-					entities.position[bullet] = entities.position[i] - Vec2(entities.size[i].w / 2, 0);
-					entities.gun[i].side = Gun::Side::RIGHT;
-				}
-				else if(entities.gun[i].side == Gun::Side::RIGHT)
-				{
-					entities.position[bullet] = entities.position[i] + Vec2(entities.size[i].w / 2, 0);
-					entities.gun[i].side = Gun::Side::LEFT;
-				}
-				
-				// concentrated fire
-				else if(entities.gun[i].side == Gun::Side::CENTER)
-				{
-					entities.position[bullet] = entities.position[i];
-				}
+				entities.position[bullet] = entities.position[i];
 				
 				entities.velocity[bullet] = entities.velocity[i] + entities.gun[i].bullet_speed * Vec2(entities.direction[i]);
 				entities.image[bullet] = textures.load(bullet_pixels, {{'*', {255, 255, 0}}}, {255, 0, 0});
