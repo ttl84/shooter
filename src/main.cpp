@@ -461,7 +461,10 @@ void update_camera(void)
 	{
 		if((entities.mask[i] & ecs::CAMERA_FOCUS) == ecs::CAMERA_FOCUS)
 		{
-			camera.setCenterY(floor(entities.position[i].y - entities.velocity[i].y - player_speed::normal));
+			float center = entities.position[i].y;
+			float adjustment = entities.velocity[i].y + player_speed::normal;
+			float multiplier = window_height * 0.7 / (player_speed::fast - player_speed::slow);
+			camera.setCenterY(floor(center - adjustment * multiplier));
 			return;
 		}
 	}
