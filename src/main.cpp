@@ -54,8 +54,8 @@ CharImg const enemy_pixels("\
  *      *      * \n\
         *        ");
 CharImg const bullet_pixels("\
-*\n\
-*");
+**\n\
+**");
 
 CharImg const star_pixels("*");
 
@@ -111,13 +111,14 @@ namespace ecs{
 		HEALTH = BIT(6),
 		LIFESPAN = BIT(7),
 		COLLISION_DAMAGE = BIT(8),
+		DEATH_ACTION = BIT(9),
 		
-		ENEMY_CONTROL = BIT(9),
-		KEYBOARD_CONTROL = BIT(10),
+		ENEMY_CONTROL = BIT(10),
+		KEYBOARD_CONTROL = BIT(11),
 		
-		FACTION = BIT(11),
-		GUN = BIT(12),
-		CAMERA_FOCUS = BIT(13)
+		FACTION = BIT(12),
+		GUN = BIT(13),
+		CAMERA_FOCUS = BIT(14)
 		
 	};
 	mask_t constexpr move_mask = POSITION | VELOCITY;
@@ -396,11 +397,11 @@ void shooter_process(float dt)
 		}
 	}
 }
-void bullet_process(float dt)
+void lifespan_process(float dt)
 {
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
-		if((entities.mask[i] & ecs::bullet_mask) == ecs::bullet_mask)
+		if((entities.mask[i] & ecs::LIFESPAN) == ecs::LIFESPAN)
 		{
 			entities.lifespan[i] -= dt;
 		}
@@ -420,28 +421,36 @@ void move_process(float dt)
 }
 void collision_damage_process(void)
 {
-	std::vector<ecs::entity_t> players;
-	std::vector<ecs::entity_t> enemies;
+	// first construct collision shape for entities that can collide
+	struct Object{
+		ecs::entity_t id;
+		Circ shape;
+	};
+	std::vector<Object> players;
+	std::vector<Object> enemies;
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
 		if((entities.mask[i] & ecs::collision_damage_mask) == ecs::collision_damage_mask)
 		{
+			Object obj;
+			obj.id = i;
+			obj.shape = Circ(entities.position[i], entities.size[i].w / 2.5);
 			if(entities.faction[i] == Faction::PLAYER)
-				players.push_back(i);
+				players.push_back(obj);
 			else if(entities.faction[i] == Faction::ENEMY)
-				enemies.push_back(i);
+				enemies.push_back(obj);
 		}
 	}
-	for(ecs::entity_t i : players)
+	
+	// test the two groups against each other
+	for(Object i : players)
 	{
-		Circ shapeA(entities.position[i], entities.size[i].w / 2.5);
-		for(ecs::entity_t j : enemies)
+		for(Object j : enemies)
 		{
-			Circ shapeB(entities.position[j], entities.size[j].w / 2.5);
-			if(shapeA.intersects(shapeB))
+			if(i.shape.intersects(j.shape))
 			{
-				entities.health[i] -= entities.collision_damage[j];
-				entities.health[j] -= entities.collision_damage[i];
+				entities.health[i.id] -= entities.collision_damage[j.id];
+				entities.health[j.id] -= entities.collision_damage[i.id];
 			}
 		}
 	}
@@ -500,9 +509,11 @@ void update(float const dt)
 {
 	keyboard_control();
 	shooter_process(dt);
-	bullet_process(dt);
+	
 	move_process(dt);
+	
 	collision_damage_process();
+	lifespan_process(dt);
 	death_process();
 	
 	update_camera();
