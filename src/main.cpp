@@ -6,6 +6,7 @@
 #include <stack>
 #include <string>
 #include <sstream>
+#include <iostream>
 
 #include <SDL2/SDL.h>
 
@@ -16,6 +17,7 @@
 #include "PI.h"
 #include "TextureStorage.h"
 #include "CharImg.h"
+#include "input.h"
 CharImg const explosion_pixels[3] = {
 {R"(
     a
@@ -39,44 +41,70 @@ abcbddb
 )"}};
 CharImg const player_pixels("\
         *        \n\
-        *        \n\
+       ***       \n\
        * *       \n\
       ** **      \n\
       ** **      \n\
      **   **     \n\
      ** * **     \n\
      ** * **     \n\
-      *****      \n\
+    *********    \n\
      *******     \n\
     * ***** *    \n\
    *   ***   *   \n\
   *  * *** *  *  \n\
- ** *   *   * ** \n\
+ ** * * * * * ** \n\
  ***   ***   *** \n\
   **         **  \n\
-    *       *    ");
+   *         *   ");
 
 CharImg const enemy_pixels("\
-        *        \n\
-        *        \n\
-       * *       \n\
-      ** **      \n\
-     *** ***     \n\
-      ** **      \n\
-       * *       \n\
-      ** **      \n\
-    **** ****    \n\
-   ***** *****   \n\
-  *** * * * ***  \n\
- **** * * * **** \n\
-***    ***    ***\n\
-**     ***     **\n\
- *      *      * \n\
- *      *      * \n\
-        *        ");
-CharImg const bullet_pixels("\
+        a        \n\
+        a        \n\
+       b b       \n\
+      ba ab      \n\
+     bba abb     \n\
+    b aa aa b    \n\
+   b   a a   b   \n\
+      ca ac      \n\
+    ccccacccc    \n\
+   ccccc ccccc   \n\
+  cdd c a c ddc  \n\
+ ccdd a a a ddcc \n\
+ccd    aaa    dcc\n\
+cd     aaa     dc\n\
+ d      a      d \n\
+ d      a      d \n\
+        a        ");
+CharImg const laser_pixels("\
+**\n\
+**\n\
+**\n\
+**\n\
+**\n\
+**\n\
+**\n\
+**\n\
+**\n\
+**\n\
+**\n\
+**\n\
+**\n\
+**\n\
+**\n\
+**\n\
+**\n\
+**\n\
+**\n\
 **\n\
 **");
+
+CharImg const bullet_pixels("\
+  *  \n\
+  *  \n\
+*****\n\
+  *  \n\
+  *  ");
 
 CharImg const star_pixels("*");
 
@@ -87,26 +115,10 @@ struct Gun{
 	float wait_time; // time left before the next fire
 	Vec2 direction;
 	bool fire;
-	void (*gun_function) (unsigned, Gun &);
+	void (*gun_function) (unsigned self);
 	Gun(void) : delay(0), bullet_speed(0), wait_time(0), fire(false), gun_function(nullptr) {}
 };
-Gun player_gun(void)
-{
-	Gun g;
-	g.delay = 0.1;
-	g.bullet_speed = 150;
-	g.wait_time = 0;
-	return g;
-}
 
-Gun basic_gun(void)
-{
-	Gun g;
-	g.delay = 0.8;
-	g.bullet_speed = 50;
-	g.wait_time = 0;
-	return g;
-}
 
 enum class Faction{
 	PLAYER,
@@ -147,9 +159,9 @@ namespace ecs{
 	mask_t constexpr shooter_mask = POSITION | DIRECTION | SIZE | GUN;
 	mask_t constexpr player_mask = move_mask | ACCELERATION | shooter_mask | collision_damage_mask | IMAGE | HEALTH | KEYBOARD_CONTROL | CAMERA_FOCUS;
 	mask_t constexpr enemy_mask = move_mask | shooter_mask | collision_damage_mask | IMAGE | ENEMY_CONTROL | HEALTH;
-	mask_t constexpr bullet_mask = move_mask | collision_damage_mask | IMAGE | TIMER | HEALTH;
+	mask_t constexpr bullet_mask = move_mask | collision_damage_mask | DIRECTION | IMAGE | TIMER | HEALTH;
 	
-	template <unsigned MAX_ENTITIES>
+	constexpr unsigned MAX_ENTITIES = 1000;
 	struct Entity{
 		mask_t mask[MAX_ENTITIES];
 		Vec2 position[MAX_ENTITIES];
@@ -175,7 +187,10 @@ namespace ecs{
 			if(holes.empty())
 			{
 				if(m_count == MAX_ENTITIES)
-					next = m_count - 1;
+				{
+					std::cerr << "out of slots for new entity, aborting\n";
+					abort();
+				}
 				else
 					next = m_count++;
 			}
@@ -184,15 +199,14 @@ namespace ecs{
 				next = holes.top();
 				holes.pop();
 			}
-
-			death_function[next] = nullptr;
-			timer_function[next] = nullptr;
+			image[next] = NULL;
+			death_function[next] = [](unsigned self){std::cerr << "missing death function\n";};
+			timer_function[next] = [](unsigned self){std::cerr << "missing timer function\n";};
 			return next;
 		}
 		void remove(entity_t i)
 		{
 			mask[i] = 0;
-			image[i] = NULL;
 			holes.push(i);
 		}
 		unsigned count(void) const
@@ -210,7 +224,6 @@ namespace ecs{
 
 }
 
-bool running = true;
 float const dt_unit = 1.0 / 1000.0;
 unsigned window_width = 640;
 unsigned window_height = 640;
@@ -220,68 +233,91 @@ SDL_Renderer * renderer = NULL;
 Rect camera;
 
 
-ecs::Entity<1000> entities;
+ecs::Entity entities;
 std::deque<Vec2> stars;
 
 TextureStorage textures;
 
-namespace control{
-	bool faster = false;
-	bool slower = false;
-	bool left = false;
-	bool right = false;
-	bool fire = false;
-}
+
 
 namespace player_speed{
-	float fast = 350;
+	float fast = 200;
 	float slow = 50;
-	float normal = (fast + slow) / 2.0;
+	float normal = slow + (fast - slow) / 2.0;
 }
-
-
-void handle_event(void)
+Gun player_gun(void)
 {
-	SDL_Event e;
-	while(SDL_PollEvent(&e))
+	Gun g;
+	g.delay = 0.1;
+	g.bullet_speed = 550;
+	g.wait_time = 0;
+	g.gun_function = [](ecs::entity_t self) -> void
 	{
-		if(e.type == SDL_KEYDOWN)
-		{
-			SDL_Keycode symbol = e.key.keysym.sym;
-			if(symbol == SDLK_UP)
-				control::faster = true;
-			else if(symbol == SDLK_DOWN)
-				control::slower = true;
-			else if(symbol == SDLK_LEFT)
-				control::left = true;
-			else if(symbol == SDLK_RIGHT)
-				control::right = true;
-			else if(symbol == SDLK_z)
-				control::fire = true;
-			else if(symbol == SDLK_ESCAPE)
-				running = false;
-				
-		}
-		else if(e.type == SDL_KEYUP)
-		{
-			SDL_Keycode symbol = e.key.keysym.sym;
-			if(symbol == SDLK_UP)
-				control::faster = false;
-			else if(symbol == SDLK_DOWN)
-				control::slower = false;
-			else if(symbol == SDLK_LEFT)
-				control::left = false;
-			else if(symbol == SDLK_RIGHT)
-				control::right = false;
-			else if(symbol == SDLK_z)
-				control::fire = false;
-		}
-		else if(e.type == SDL_QUIT)
-		{
-			running = false;
-		}
-	}
+		
+		Gun const & gun = entities.gun[self];
+		
+		ecs::entity_t bullet = entities.claim();
+		entities.mask[bullet] = ecs::bullet_mask;
+		
+		entities.image[bullet] = textures.load(laser_pixels, {{'*', {0, 255, 0}}}, {255, 0, 0});
+		
+		entities.position[bullet] = entities.position[self];
+		entities.velocity[bullet] = entities.velocity[self] + gun.bullet_speed * Vec2(entities.direction[self] + 0.0005 * (float)(rand() % 100 - 50));
+		entities.direction[bullet] = entities.direction[self];
+		
+		entities.collision_damage[bullet] = 1;
+		entities.faction[bullet] = Faction::PLAYER;
+		
+		entities.health[bullet] = 1;
+		
+		// visual effect for bullet if it hits something
+		entities.death_function[bullet] = [](unsigned bullet) -> void{
+			entities.timer[bullet] = 0.5;
+			entities.image[bullet] = textures.load(explosion_pixels[0],
+								{{'a', {254, 254, 0}},
+								{'b', {254, 0, 0}},
+								{'c', {0, 254, 0}},
+								{'d', {255, 255, 255}}}, {255, 0, 0});
+			entities.mask[bullet] = ecs::TIMER | ecs::IMAGE | ecs::POSITION;
+			
+		};
+		
+		entities.timer[bullet] = 1 + rand() % 4;
+		entities.timer_function[bullet] = [](ecs::entity_t self){entities.remove(self);};
+	};
+	return g;
 }
+
+Gun basic_gun(void)
+{
+	Gun g;
+	g.delay = 0.8;
+	g.bullet_speed = 50;
+	g.wait_time = 0;
+	g.gun_function = [](ecs::entity_t i)
+	{
+		ecs::entity_t bullet = entities.claim();
+		entities.mask[bullet] = ecs::bullet_mask;
+		
+		entities.position[bullet] = entities.position[i];
+		
+		entities.velocity[bullet] = entities.velocity[i] + entities.gun[i].bullet_speed * Vec2(entities.direction[i]);
+		entities.image[bullet] = textures.load(bullet_pixels, {{'*', {255, 255, 0}}}, {255, 0, 0});
+		entities.timer[bullet] = 4.0;
+		entities.timer_function[bullet] = [](ecs::entity_t i){entities.health[i] = 0;};
+		
+		entities.health[bullet] = 1;
+		entities.death_function[bullet] = [](ecs::entity_t i){entities.remove(i);};
+		
+		entities.collision_damage[bullet] = 1;
+		entities.faction[bullet] = entities.faction[i];
+		
+	};
+	g.fire = true;
+	return g;
+}
+
+
 void spawn_player(void)
 {
 	ecs::entity_t player = entities.claim();
@@ -301,35 +337,14 @@ void spawn_player(void)
 	entities.size[player] = Size(w, h);
 	
 	entities.gun[player] = player_gun();
-	entities.gun[player].gun_function = [](unsigned i, Gun & gun) -> void{
-		ecs::entity_t bullet = entities.claim();
-		entities.mask[bullet] = ecs::bullet_mask;
-		entities.timer[bullet] = 1 + rand() % 4;
-		entities.health[bullet] = 1;
-		entities.image[bullet] = textures.load(bullet_pixels, {{'*', {0, 255, 0}}}, {255, 0, 0});
-		entities.position[bullet] = entities.position[i];
-		entities.velocity[bullet] = entities.velocity[i] + gun.bullet_speed * Vec2(entities.direction[i] + 0.001 * (float)(rand() % 100 - 50));
-		entities.collision_damage[bullet] = 1;
-		entities.faction[bullet] = Faction::PLAYER;
-		entities.death_function[bullet] = [](unsigned bullet) -> void{
-			entities.health[bullet] = 1;
-			entities.timer[bullet] = 1.0;
-			entities.image[bullet] = textures.load(explosion_pixels[0],
-								{{'a', {254, 254, 0}},
-								{'b', {254, 0, 0}},
-								{'c', {0, 254, 0}},
-								{'d', {255, 255, 255}}}, {255, 0, 0});
-			entities.mask[bullet] &= ~(ecs::COLLISION_DAMAGE | ecs::VELOCITY);
-			
-		};
-		entities.timer_function[bullet] = [](ecs::entity_t self){entities.remove(self);};
-	};
 	
 	entities.health[player] = 3;
 	
 	entities.collision_damage[player] = 10;
 	
 	entities.faction[player] = Faction::PLAYER;
+	
+	entities.death_function[player] = [](ecs::entity_t self){entities.remove(self);};
 }
 void spawn_enemy(void)
 {
@@ -339,7 +354,11 @@ void spawn_enemy(void)
 		
 		entities.mask[enemy] = ecs::enemy_mask;
 		
-		entities.image[enemy] = textures.load(enemy_pixels, {{'*', {0, 0, 255}}}, {255, 0, 0});
+		entities.image[enemy] = textures.load(enemy_pixels, {
+			{'a', {0, 255, 255}},
+			{'b', {254, 0, 0}},
+			{'c', {0, 0, 250}},
+			{'d', {255, 255, 0}}}, {255, 0, 0});
 		
 		int w, h;
 		SDL_QueryTexture(entities.image[enemy], NULL, NULL, &w, &h);
@@ -356,15 +375,16 @@ void spawn_enemy(void)
 		
 		entities.faction[enemy] = Faction::ENEMY;
 		
-		entities.death_function[enemy] = [](ecs::entity_t enemy) -> void{
+		entities.death_function[enemy] = [](ecs::entity_t enemy) -> void
+		{
 			entities.health[enemy] = 1;
-			entities.timer[enemy] = 1.0;
+			entities.timer[enemy] = 0.5;
 			entities.image[enemy] = textures.load(explosion_pixels[2],
 								{{'a', {255, 254, 0}},
 								{'b', {254, 0, 0}},
 								{'c', {250, 0, 250}},
 								{'d', {255, 255, 255}}}, {255, 0, 0});
-			entities.mask[enemy] &= ~(ecs::COLLISION_DAMAGE | ecs::VELOCITY);
+			entities.mask[enemy] = ecs::IMAGE | ecs::TIMER | ecs::POSITION;
 			entities.mask[enemy] |= ecs::TIMER;
 			entities.timer_function[enemy] = [](ecs::entity_t enemy){entities.remove(enemy);};
 		};
@@ -375,7 +395,7 @@ void keyboard_control(void)
 	// finds the entity with keyboard control privilege
 	ecs::entity_t i = 0;
 	for(i = 0; i < entities.count(); i++)
-		if((entities.mask[i] & ecs::KEYBOARD_CONTROL) == ecs::KEYBOARD_CONTROL)
+		if(entities.mask[i] & ecs::KEYBOARD_CONTROL)
 			break;
 	if(i == entities.count())
 		return;
@@ -392,14 +412,14 @@ void keyboard_control(void)
 	if(control::faster)
 	{
 		if(speed < player_speed::fast)
-			entities.acceleration[i].y = -100;
+			entities.acceleration[i].y = -30;
 		else
 			entities.acceleration[i].y = 0;
 	}
 	else if(control::slower)
 	{
 		if(speed > player_speed::slow)
-			entities.acceleration[i].y = 100;
+			entities.acceleration[i].y = 30;
 		else
 			entities.acceleration[i].y = 0;
 	}
@@ -418,7 +438,7 @@ void keyboard_control(void)
 	}
 	else
 	{
-		entities.acceleration[i].x = -10 * entities.velocity[i].x;
+		entities.acceleration[i].x = -1 * entities.velocity[i].x;
 	}
 	entities.direction[i] = entities.velocity[i].angle();
 	if(control::fire)
@@ -445,23 +465,7 @@ void shooter_process(float dt)
 			if(entities.gun[i].fire && entities.gun[i].wait_time <= 0)
 			{
 				entities.gun[i].wait_time += entities.gun[i].delay;
-				auto gun_function = entities.gun[i].gun_function;
-				if(gun_function != nullptr)
-					gun_function(i, entities.gun[i]);
-				else
-				{
-					unsigned bullet = entities.claim();
-					entities.mask[bullet] = ecs::bullet_mask;
-					
-					entities.position[bullet] = entities.position[i];
-					
-					entities.velocity[bullet] = entities.velocity[i] + entities.gun[i].bullet_speed * Vec2(entities.direction[i]);
-					entities.image[bullet] = textures.load(bullet_pixels, {{'*', {255, 255, 0}}}, {255, 0, 0});
-					entities.timer[bullet] = 4.0;
-					entities.health[bullet] = 1;
-					entities.collision_damage[bullet] = 1;
-					entities.faction[bullet] = entities.faction[i];
-				}
+				entities.gun[i].gun_function(i);
 			}
 		}
 	}
@@ -472,9 +476,11 @@ void move_process(float dt)
 	
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
-		if((entities.mask[i] & ecs::move_mask) == ecs::move_mask)
+		ecs::mask_t myMask = entities.mask[i];
+		if((myMask & ecs::POSITION) && (myMask & ecs::VELOCITY))
 		{
-			entities.velocity[i] += dt * entities.acceleration[i];
+			if(myMask & ecs::ACCELERATION)
+				entities.velocity[i] += dt * entities.acceleration[i];
 			entities.position[i] += dt * entities.velocity[i];
 		}
 	}
@@ -665,13 +671,13 @@ int main(int argc, char ** argv)
 	Uint32 frame_begin = 0, frame_end = 0;
 	float dt = 0.017;
 	static char title[50];
-	while(running)
+	while(not control::quit)
 	{
 		frame_begin = frame_end;
 		
 		handle_event();
-		if(dt > 0.030)
-			dt = 0.020;
+		if(dt > 1.0 / 30.0)
+			dt = 1.0 / 30.0;
 		while(dt > 0)
 		{
 			update(dt_unit);
