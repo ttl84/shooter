@@ -39,72 +39,76 @@ abcbddb
     acba
  c abcaa
 )"}};
-CharImg const player_pixels("\
-        *        \n\
-       ***       \n\
-       * *       \n\
-      ** **      \n\
-      ** **      \n\
-     **   **     \n\
-     ** * **     \n\
-     ** * **     \n\
-    *********    \n\
-     *******     \n\
-    * ***** *    \n\
-   *   ***   *   \n\
-  *  * *** *  *  \n\
- ** * * * * * ** \n\
- ***   ***   *** \n\
-  **         **  \n\
-   *         *   ");
+CharImg const player_pixels{R"(
+        *        
+       ***       
+       * *       
+      ** **      
+      ** **      
+     **   **     
+     ** * **     
+     ** * **     
+    *********    
+     *******     
+    * ***** *    
+   *   ***   *   
+  *  * *** *  *  
+ ** * * * * * ** 
+ ***   ***   *** 
+  **         **  
+   *         *   
+)"};
 
-CharImg const enemy_pixels("\
-        a        \n\
-        a        \n\
-       b b       \n\
-      ba ab      \n\
-     bba abb     \n\
-    b aa aa b    \n\
-   b   a a   b   \n\
-      ca ac      \n\
-    ccccacccc    \n\
-   ccccc ccccc   \n\
-  cdd c a c ddc  \n\
- ccdd a a a ddcc \n\
-ccd    aaa    dcc\n\
-cd     aaa     dc\n\
- d      a      d \n\
- d      a      d \n\
-        a        ");
-CharImg const laser_pixels("\
-**\n\
-**\n\
-**\n\
-**\n\
-**\n\
-**\n\
-**\n\
-**\n\
-**\n\
-**\n\
-**\n\
-**\n\
-**\n\
-**\n\
-**\n\
-**\n\
-**\n\
-**\n\
-**\n\
-**\n\
-**");
+CharImg const enemy_pixels{R"(
+        a        
+        a        
+       b b       
+      ba ab      
+     bba abb     
+    b aa aa b    
+   b   a a   b   
+      ca ac      
+    ccccacccc    
+   ccccc ccccc   
+  cdd c a c ddc  
+ ccdd a a a ddcc 
+ccd    aaa    dcc
+cd     aaa     dc
+ d      a      d 
+ d      a      d 
+        a
+)"};
+CharImg const laser_pixels{R"(
+*
+*
+*
+* 
+*
+* 
+*
+* 
+*
+* 
+*
+* 
+*
+* 
+*
+* 
+*
+* 
+*
+* 
+*
+)"};
 
-CharImg const bullet_pixels("\
-  *  \n\
-  *  \n\
-*****\n\
-  *  \n\
-  *  ");
+CharImg const bullet_pixels{R"(
+  *  
+  *  
+*****
+  *  
+  *
+)"};
 
 CharImg const star_pixels("*");
 
@@ -113,7 +117,6 @@ struct Gun{
 	float bullet_speed;
 	
 	float wait_time; // time left before the next fire
-	Vec2 direction;
 	bool fire;
 	void (*gun_function) (unsigned self);
 	Gun(void) : delay(0), bullet_speed(0), wait_time(0), fire(false), gun_function(nullptr) {}
@@ -146,19 +149,21 @@ namespace ecs{
 		TIMER = BIT(7),
 		COLLISION_DAMAGE = BIT(8),
 		
-		ENEMY_CONTROL = BIT(10),
-		KEYBOARD_CONTROL = BIT(11),
+		ENEMY_CONTROL = BIT(9),
+		KEYBOARD_CONTROL = BIT(10),
 		
-		FACTION = BIT(12),
-		GUN = BIT(13),
-		CAMERA_FOCUS = BIT(14)
+		FACTION = BIT(11),
+		GUN = BIT(12),
+		CAMERA_FOCUS = BIT(13),
+		DESPAWN = BIT(14),
+		TARGET = BIT(15)
 		
 	};
 	mask_t constexpr move_mask = POSITION | VELOCITY;
 	mask_t constexpr collision_damage_mask = POSITION | SIZE | COLLISION_DAMAGE | FACTION;
 	mask_t constexpr shooter_mask = POSITION | DIRECTION | SIZE | GUN;
 	mask_t constexpr player_mask = move_mask | ACCELERATION | shooter_mask | collision_damage_mask | IMAGE | HEALTH | KEYBOARD_CONTROL | CAMERA_FOCUS;
-	mask_t constexpr enemy_mask = move_mask | shooter_mask | collision_damage_mask | IMAGE | ENEMY_CONTROL | HEALTH;
+	mask_t constexpr enemy_mask = move_mask | shooter_mask | collision_damage_mask | IMAGE | ENEMY_CONTROL | HEALTH | DESPAWN;
 	mask_t constexpr bullet_mask = move_mask | collision_damage_mask | DIRECTION | IMAGE | TIMER | HEALTH;
 	
 	constexpr unsigned MAX_ENTITIES = 1000;
@@ -173,14 +178,16 @@ namespace ecs{
 		int collision_damage[MAX_ENTITIES];
 		int health[MAX_ENTITIES];
 		float timer[MAX_ENTITIES];
+		entity_t target[MAX_ENTITIES];
 		
 		Gun gun[MAX_ENTITIES];
 		Faction faction[MAX_ENTITIES];
 		
 		void (*death_function[MAX_ENTITIES])(entity_t self);
 		void (*timer_function[MAX_ENTITIES])(entity_t self);
+		void (*despawn_function[MAX_ENTITIES])(entity_t self);
 		
-		Entity(void): mask{0}, image{NULL}, m_count(0) {}
+		Entity(void): mask{0}, image{nullptr}, m_count(0) {}
 		entity_t claim(void)
 		{
 			entity_t next;
@@ -199,7 +206,8 @@ namespace ecs{
 				next = holes.top();
 				holes.pop();
 			}
-			image[next] = NULL;
+			image[next] = nullptr;
+			target[next] = 0;
 			death_function[next] = [](unsigned self){std::cerr << "missing death function\n";};
 			timer_function[next] = [](unsigned self){std::cerr << "missing timer function\n";};
 			return next;
@@ -225,11 +233,11 @@ namespace ecs{
 }
 
 float const dt_unit = 1.0 / 1000.0;
-unsigned window_width = 640;
-unsigned window_height = 640;
+unsigned window_width = 340;
+unsigned window_height = 340;
 
-SDL_Window * screen = NULL;
-SDL_Renderer * renderer = NULL;
+SDL_Window * screen = nullptr;
+SDL_Renderer * renderer = nullptr;
 Rect camera;
 
 
@@ -301,7 +309,11 @@ Gun basic_gun(void)
 		
 		entities.position[bullet] = entities.position[i];
 		
-		entities.velocity[bullet] = entities.velocity[i] + entities.gun[i].bullet_speed * Vec2(entities.direction[i]);
+		ecs::entity_t target = entities.target[i];
+		Vec2 direction = entities.position[target] - entities.position[i];
+		if(direction.norm() > 0)
+			direction /= direction.norm();
+		entities.velocity[bullet] = entities.velocity[i] + entities.gun[i].bullet_speed * direction;
 		entities.image[bullet] = textures.load(bullet_pixels, {{'*', {255, 255, 0}}}, {255, 0, 0});
 		entities.timer[bullet] = 4.0;
 		entities.timer_function[bullet] = [](ecs::entity_t i){entities.health[i] = 0;};
@@ -316,7 +328,14 @@ Gun basic_gun(void)
 	g.fire = true;
 	return g;
 }
-
+ecs::entity_t get_player(void)
+{
+	ecs::entity_t i;
+	for(i = 0; i < entities.count(); i++)
+		if(entities.mask[i] == ecs::player_mask)
+			break;
+	return i;
+}
 
 void spawn_player(void)
 {
@@ -327,7 +346,7 @@ void spawn_player(void)
 	entities.image[player] = textures.load(player_pixels, {{'*', {255, 255, 255}}}, {255, 0, 0});
 	
 	int w, h;
-	SDL_QueryTexture(entities.image[player], NULL, NULL, &w, &h);
+	SDL_QueryTexture(entities.image[player], nullptr, nullptr, &w, &h);
 	Rect player_rect(0, 0, w, h);
 	player_rect.setCenter(camera.getCenter());
 	entities.position[player] = player_rect.getPosition();
@@ -361,7 +380,7 @@ void spawn_enemy(void)
 			{'d', {255, 255, 0}}}, {255, 0, 0});
 		
 		int w, h;
-		SDL_QueryTexture(entities.image[enemy], NULL, NULL, &w, &h);
+		SDL_QueryTexture(entities.image[enemy], nullptr, nullptr, &w, &h);
 		entities.position[enemy] = Vec2(rand() % window_width, camera.getTop() - h);
 		entities.velocity[enemy] = Vec2(0, rand() % 50 + 1);
 		entities.direction[enemy] = Vec2(0, 1).angle();
@@ -374,6 +393,8 @@ void spawn_enemy(void)
 		entities.collision_damage[enemy] = 2;
 		
 		entities.faction[enemy] = Faction::ENEMY;
+			
+		entities.target[enemy] = get_player();
 		
 		entities.death_function[enemy] = [](ecs::entity_t enemy) -> void
 		{
@@ -613,8 +634,8 @@ void draw(void)
 		SDL_Rect position;
 		position.x = i->x - camera.x;
 		position.y = i->y - camera.y;
-		SDL_QueryTexture(star_tex, NULL, NULL, &position.w, &position.h);
-		SDL_RenderCopy(renderer, star_tex, NULL, &position);
+		SDL_QueryTexture(star_tex, nullptr, nullptr, &position.w, &position.h);
+		SDL_RenderCopy(renderer, star_tex, nullptr, &position);
 	}
 	
 	// draw entities (space fighters and bullets)
@@ -624,10 +645,10 @@ void draw(void)
 		if((entities.mask[i] & draw_mask) == draw_mask)
 		{
 			SDL_Rect position;
-			SDL_QueryTexture(entities.image[i], NULL, NULL, &position.w, &position.h);
+			SDL_QueryTexture(entities.image[i], nullptr, nullptr, &position.w, &position.h);
 			position.x = int(entities.position[i].x) - position.w / 2 - int(camera.x);
 			position.y = int(entities.position[i].y) - position.h / 2 - int(camera.y);
-			SDL_RenderCopyEx(renderer, entities.image[i], NULL, &position, (entities.direction[i] + PI / 2.0) * 180 / PI, NULL, SDL_FLIP_NONE);
+			SDL_RenderCopyEx(renderer, entities.image[i], nullptr, &position, (entities.direction[i] + PI / 2.0) * 180 / PI, nullptr, SDL_FLIP_NONE);
 		}
 	}
 	
@@ -652,9 +673,9 @@ void init_state(void)
 void cleanup_state(void)
 {
 	SDL_DestroyRenderer(renderer);
-	renderer = NULL;
+	renderer = nullptr;
 	SDL_DestroyWindow(screen);
-	screen = NULL;
+	screen = nullptr;
 }
 void cleanup_system(void)
 {
