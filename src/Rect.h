@@ -54,7 +54,7 @@ struct Rect{
 	}
 	float getBottom(void) const
 	{
-		return y + w;
+		return y + h;
 	}
 	float getLeft(void) const
 	{
