@@ -232,8 +232,8 @@ namespace ecs{
 }
 
 float const dt_unit = 1.0 / 1000.0;
-unsigned window_width = 640;
-unsigned window_height = 480;
+unsigned window_width = 360;
+unsigned window_height = 360;
 
 SDL_Window * screen = nullptr;
 SDL_Renderer * renderer = nullptr;
@@ -472,20 +472,23 @@ ecs::entity_t spawn_enemy2(void)
 	entities.mask[enemy] |= ecs::THINK | ecs::ACCELERATION | ecs::TIMER;
 	entities.think_function[enemy] = [](ecs::entity_t i){
 		ecs::entity_t target = entities.target[i];
-		if(entities.position[i].y + 50 > entities.position[target].y)
-			entities.acceleration[i] = Vec2(0, -50);
-		else if(entities.velocity[i].y - 50 < entities.velocity[target].y)
-			entities.acceleration[i] = Vec2(0, 100);
-		else
-			entities.acceleration[i] = Vec2{0, 0};
+		entities.velocity[i].y = entities.velocity[target].y + (-50);
+		entities.think_function[i] = [](ecs::entity_t i){
+			
+		};
 	};
+	entities.timer[enemy] = 10.0;
 	entities.timer_function[enemy] = [](ecs::entity_t i){
+		entities.think_function[i] = [](ecs::entity_t i){
+			entities.acceleration[i] = Vec2(10, -50);
+		};
+	};
 	return enemy;
 }
 void spawn_enemies(void)
 {
 	unsigned roll = rand();
-	if(roll < 10)
+	if(roll < 5)
 		spawn_enemy2();
 	else if(roll < 20)
 		spawn_enemy();
@@ -498,7 +501,7 @@ void think_process(void)
 			entities.think_function[i](i);
 	}
 }
-void shooter_process(float dt)
+void shoot_process(float dt)
 {
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
@@ -517,17 +520,24 @@ void shooter_process(float dt)
 		}
 	}
 }
-
-void move_process(float dt)
+void accelerate_process(float dt)
 {
-	
+	ecs::mask_t accel_mask = ecs::VELOCITY | ecs::ACCELERATION;
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
-		ecs::mask_t myMask = entities.mask[i];
-		if((myMask & ecs::POSITION) && (myMask & ecs::VELOCITY))
+		if((entities.mask[i] & accel_mask) == accel_mask)
 		{
-			if(myMask & ecs::ACCELERATION)
-				entities.velocity[i] += dt * entities.acceleration[i];
+			entities.velocity[i] += dt * entities.acceleration[i];
+		}
+	}
+}
+void move_process(float dt)
+{
+	ecs::mask_t move_mask = ecs::POSITION | ecs::VELOCITY;
+	for(ecs::entity_t i = 0; i < entities.count(); i++)
+	{
+		if((entities.mask[i] & move_mask) == move_mask)
+		{
 			entities.position[i] += dt * entities.velocity[i];
 		}
 	}
@@ -636,8 +646,9 @@ void despawn_star(void)
 void update(float const dt)
 {
 	think_process();
-	shooter_process(dt);
+	shoot_process(dt);
 	
+	accelerate_process(dt);
 	move_process(dt);
 	
 	collision_damage_process();
