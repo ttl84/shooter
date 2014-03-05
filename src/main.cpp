@@ -147,7 +147,7 @@ namespace ecs{
 		
 		HEALTH = BIT(6),
 		TIMER = BIT(7),
-		COLLISION_DAMAGE = BIT(8),
+		COLLISION_EFFECT = BIT(8),
 		
 		THINK = BIT(9),
 		
@@ -158,11 +158,11 @@ namespace ecs{
 		
 	};
 	mask_t constexpr move_mask = POSITION | VELOCITY;
-	mask_t constexpr collision_damage_mask = POSITION | SIZE | COLLISION_DAMAGE | FACTION;
+	mask_t constexpr collision_effect_mask = POSITION | SIZE | COLLISION_EFFECT;
 	mask_t constexpr shooter_mask = POSITION | DIRECTION | SIZE | GUN;
-	mask_t constexpr player_mask = move_mask | ACCELERATION | shooter_mask | collision_damage_mask | IMAGE | HEALTH | THINK | CAMERA_FOCUS;
-	mask_t constexpr enemy_mask = move_mask | shooter_mask | collision_damage_mask | IMAGE | HEALTH;
-	mask_t constexpr bullet_mask = move_mask | collision_damage_mask | DIRECTION | IMAGE | TIMER | HEALTH;
+	mask_t constexpr player_mask = move_mask | ACCELERATION | shooter_mask | collision_effect_mask | IMAGE | HEALTH | THINK | CAMERA_FOCUS;
+	mask_t constexpr enemy_mask = move_mask | shooter_mask | collision_effect_mask | IMAGE | HEALTH;
+	mask_t constexpr bullet_mask = move_mask | collision_effect_mask | DIRECTION | IMAGE | TIMER | HEALTH;
 	
 	constexpr unsigned MAX_ENTITIES = 1000;
 	struct Entity{
@@ -173,7 +173,7 @@ namespace ecs{
 		double direction[MAX_ENTITIES];
 		Size size[MAX_ENTITIES];
 		SDL_Texture * image[MAX_ENTITIES];
-		int collision_damage[MAX_ENTITIES];
+		
 		int health[MAX_ENTITIES];
 		float timer[MAX_ENTITIES];
 		entity_t target[MAX_ENTITIES];
@@ -184,7 +184,7 @@ namespace ecs{
 		std::function<void(entity_t)> think_function[MAX_ENTITIES];
 		std::function<void(entity_t)> death_function[MAX_ENTITIES];
 		std::function<void(entity_t)> timer_function[MAX_ENTITIES];
-		std::function<void(entity_t)> despawn_function[MAX_ENTITIES];
+		std::function<void(entity_t)> collision_effect[MAX_ENTITIES];
 		
 		Entity(void): mask{0}, image{nullptr}, m_count(0) {}
 		entity_t claim(void)
@@ -272,7 +272,9 @@ Gun player_gun(void)
 		entities.velocity[bullet] = entities.velocity[self] + gun.bullet_speed * Vec2(entities.direction[self] + 0.0005 * (float)(rand() % 100 - 50));
 		entities.direction[bullet] = entities.direction[self];
 		
-		entities.collision_damage[bullet] = 1;
+		entities.collision_effect[bullet] = [](ecs::entity_t i){
+			entities.health[i] -= 1;
+		};
 		entities.faction[bullet] = Faction::PLAYER;
 		
 		entities.health[bullet] = 2;
@@ -320,7 +322,9 @@ Gun basic_gun(void)
 		entities.health[bullet] = 1;
 		entities.death_function[bullet] = [](ecs::entity_t i){entities.remove(i);};
 		
-		entities.collision_damage[bullet] = 1;
+		entities.collision_effect[bullet] = [](ecs::entity_t i){
+			entities.health[i] -= 1;
+		};
 		entities.faction[bullet] = entities.faction[i];
 		
 	};
@@ -410,7 +414,9 @@ void spawn_player(void)
 	
 	entities.health[player] = 3;
 	
-	entities.collision_damage[player] = 10;
+	entities.collision_effect[player] = [](ecs::entity_t i){
+		entities.health[i] -= 10;
+	};
 	
 	entities.faction[player] = Faction::PLAYER;
 	
@@ -440,7 +446,9 @@ ecs::entity_t spawn_enemy(void)
 	
 	entities.health[enemy] = 3;
 	
-	entities.collision_damage[enemy] = 2;
+	entities.collision_effect[enemy] = [](ecs::entity_t i){
+		entities.health[i] -= 2;
+	};
 	
 	entities.faction[enemy] = Faction::ENEMY;
 		
@@ -542,7 +550,7 @@ void move_process(float dt)
 		}
 	}
 }
-void collision_damage_process(void)
+void collision_process(void)
 {
 	// first construct collision shape for entities that can collide
 	struct Object{
@@ -553,7 +561,7 @@ void collision_damage_process(void)
 	std::vector<Object> enemies;
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
-		if((entities.mask[i] & ecs::collision_damage_mask) == ecs::collision_damage_mask)
+		if((entities.mask[i] & ecs::collision_effect_mask) == ecs::collision_effect_mask)
 		{
 			Object obj;
 			obj.id = i;
@@ -572,8 +580,8 @@ void collision_damage_process(void)
 		{
 			if(i.shape.intersects(j.shape))
 			{
-				entities.health[i.id] -= entities.collision_damage[j.id];
-				entities.health[j.id] -= entities.collision_damage[i.id];
+				entities.collision_effect[i.id](j.id);
+				entities.collision_effect[j.id](i.id);
 			}
 		}
 	}
@@ -651,7 +659,7 @@ void update(float const dt)
 	accelerate_process(dt);
 	move_process(dt);
 	
-	collision_damage_process();
+	collision_process();
 	timer_process(dt);
 	death_process();
 	
