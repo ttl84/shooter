@@ -15,26 +15,29 @@ struct Vec2{
 		return sqrt(x * x + y * y);
 	}
 };
+static
 Vec2 constexpr operator+(Vec2 const & a, Vec2 const & b)
 {
 	return Vec2(a.x + b.x, a.y + b.y);
 }
-Vec2 const & operator+=(Vec2 & a, Vec2 const & b)
+static
+void operator+=(Vec2 & a, Vec2 const & b)
 {
 	a.x += b.x;
 	a.y += b.y;
-	return a;
 }
+static
 Vec2 constexpr operator-(Vec2 const & a, Vec2 const & b)
 {
 	return Vec2(a.x - b.x, a.y - b.y);
 }
-Vec2 const & operator-=(Vec2 & a, Vec2 const & b)
+static
+void operator-=(Vec2 & a, Vec2 const & b)
 {
 	a.x -= b.x;
 	a.y -= b.y;
-	return a;
 }
+static
 Vec2 constexpr operator-(Vec2 const & a)
 {
 	return Vec2(-a.x, -a.y);
@@ -43,28 +46,31 @@ Vec2 constexpr operator*(Vec2 const & a, float k)
 {
 	return Vec2(a.x * k, a.y * k);
 }
+static
 Vec2 constexpr operator*(float k, Vec2 const & a)
 {
 	return Vec2(a.x * k, a.y * k);
 }
-Vec2 const & operator *=(Vec2 & a, float k)
+static
+void operator *=(Vec2 & a, float k)
 {
 	a.x *= k;
 	a.y *= k;
-	return a;
 }
+static
 Vec2 constexpr operator/(Vec2 const & a, float k)
 {
 	return Vec2(a.x / k, a.y / k);
 }
+static
 Vec2 constexpr operator/(float k, Vec2 const & a)
 {
 	return Vec2(a.x / k, a.y / k);
 }
-Vec2 const & operator /=(Vec2 & a, float k)
+static
+void operator /=(Vec2 & a, float k)
 {
 	a.x /= k;
 	a.y /= k;
-	return a;
 }
 #endif
