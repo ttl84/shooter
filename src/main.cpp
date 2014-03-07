@@ -152,7 +152,7 @@ Gun player_gun(ecs::Entity & entities)
 		entities.image[bullet] = textures.load(laser_pixels, {{'*', {0, 255, 0}}}, {255, 0, 0});
 		
 		entities.position[bullet] = entities.position[self];
-		entities.velocity[bullet] = entities.velocity[self] + gun.bullet_speed * Vec2(entities.direction[self] + 0.0005 * (float)(rand() % 100 - 50));
+		entities.velocity[bullet] = entities.velocity[self] + gun.bullet_speed * Vec2::fromAngle(entities.direction[self] + 0.0005 * (float)(rand() % 100 - 50));
 		entities.direction[bullet] = entities.direction[self];
 		
 		entities.collision_effect[bullet] = [&entities](ecs::entity_t i){
@@ -277,41 +277,38 @@ void keyboard_control(ecs::Entity & entities, ecs::entity_t i)
 	
 }
 
-namespace ecs{
-void Entity::spawn_player(void)
+void spawn_player(ecs::Entity & entities)
 {
-	ecs::entity_t player = claim();
+	ecs::entity_t player = entities.claim();
 	
-	mask[player] = ecs::player_mask;
+	entities.mask[player] = ecs::player_mask;
 	
-	image[player] = textures.load(player_pixels, {{'*', {255, 255, 255}}}, {255, 0, 0});
+	entities.image[player] = textures.load(player_pixels, {{'*', {255, 255, 255}}}, {255, 0, 0});
 	
 	int w, h;
-	SDL_QueryTexture(image[player], nullptr, nullptr, &w, &h);
+	SDL_QueryTexture(entities.image[player], nullptr, nullptr, &w, &h);
 	Rect player_rect(0, 0, w, h);
 	player_rect.setCenter(camera.getCenter());
-	position[player] = player_rect.getCenter();
-	velocity[player] = player_speed::normal * Vec2(0, -1);
-	acceleration[player] = Vec2(0, 0);
-	direction[player] = Vec2(0, -1).angle();
-	size[player] = Size(w, h);
+	entities.position[player] = player_rect.getCenter();
+	entities.velocity[player] = player_speed::normal * Vec2(0, -1);
+	entities.acceleration[player] = Vec2(0, 0);
+	entities.direction[player] = Vec2(0, -1).angle();
+	entities.size[player] = Size(w, h);
 	
-	gun[player] = player_gun(*this);
+	entities.gun[player] = player_gun(entities);
 	
-	health[player] = 3;
+	entities.health[player] = 3;
 	
-	collision_effect[player] = [this](ecs::entity_t i){
-		health[i] -= 10;
+	entities.collision_effect[player] = [&entities](ecs::entity_t i){
+		entities.health[i] -= 10;
 	};
 	
-	faction[player] = Faction::PLAYER;
+	entities.faction[player] = Faction::PLAYER;
 	
-	think_function[player] = [this](ecs::entity_t self){keyboard_control(*this, self);};
-	death_function[player] = [this](ecs::entity_t self){remove(self);};
+	entities.think_function[player] = [&entities](ecs::entity_t self){keyboard_control(entities, self);};
+	entities.death_function[player] = [&entities](ecs::entity_t self){entities.remove(self);};
 }
-}
-ecs::Entity entities;
-ecs::entity_t spawn_enemy(void)
+ecs::entity_t spawn_enemy(ecs::Entity & entities)
 {
 	ecs::entity_t enemy = entities.claim();
 	
@@ -334,7 +331,7 @@ ecs::entity_t spawn_enemy(void)
 	
 	entities.health[enemy] = 3;
 	
-	entities.collision_effect[enemy] = [](ecs::entity_t i){
+	entities.collision_effect[enemy] = [&entities](ecs::entity_t i){
 		entities.health[i] -= 2;
 	};
 	
@@ -342,7 +339,7 @@ ecs::entity_t spawn_enemy(void)
 		
 	entities.target[enemy] = get_player(entities);
 	
-	entities.death_function[enemy] = [](ecs::entity_t enemy) -> void
+	entities.death_function[enemy] = [&entities](ecs::entity_t enemy) -> void
 	{
 		entities.health[enemy] = 1;
 		entities.timer[enemy] = 0.5;
@@ -353,20 +350,20 @@ ecs::entity_t spawn_enemy(void)
 							{'d', {255, 255, 255}}}, {255, 0, 0});
 		entities.mask[enemy] = ecs::IMAGE | ecs::TIMER | ecs::POSITION;
 		entities.mask[enemy] |= ecs::TIMER;
-		entities.timer_function[enemy] = [](ecs::entity_t enemy){entities.remove(enemy);};
+		entities.timer_function[enemy] = [&entities](ecs::entity_t enemy){entities.remove(enemy);};
 	};
 	return enemy;
 }
 
-ecs::entity_t spawn_enemy2(void)
+ecs::entity_t spawn_enemy2(ecs::Entity & entities)
 {
-	ecs::entity_t enemy = spawn_enemy();
+	ecs::entity_t enemy = spawn_enemy(entities);
 	Size size = entities.size[enemy];
 	entities.position[enemy] = Vec2(rand() % window_width, camera.getBottom() - size.h);
 	entities.velocity[enemy] = Vec2(0, -player_speed::fast);
 	entities.direction[enemy] = Vec2(0, -1).angle();
 	entities.mask[enemy] |= ecs::THINK | ecs::ACCELERATION | ecs::TIMER;
-	entities.think_function[enemy] = [](ecs::entity_t i){
+	entities.think_function[enemy] = [&entities](ecs::entity_t i){
 		ecs::entity_t target = entities.target[i];
 		entities.velocity[i].y = entities.velocity[target].y + (-50);
 		entities.think_function[i] = [](ecs::entity_t i){
@@ -374,128 +371,26 @@ ecs::entity_t spawn_enemy2(void)
 		};
 	};
 	entities.timer[enemy] = 10.0;
-	entities.timer_function[enemy] = [](ecs::entity_t i){
-		entities.think_function[i] = [](ecs::entity_t i){
+	entities.timer_function[enemy] = [&entities](ecs::entity_t i){
+		entities.think_function[i] = [&entities](ecs::entity_t i){
 			entities.acceleration[i] = Vec2(10, -50);
 		};
 	};
 	return enemy;
 }
-void spawn_enemies(void)
+
+void spawn_enemies(ecs::Entity & entities)
 {
 	unsigned roll = rand();
 	if(roll < 5)
-		spawn_enemy2();
+		spawn_enemy2(entities);
 	else if(roll < 20)
-		spawn_enemy();
+		spawn_enemy(entities);
 }
-void think_system(void)
-{
-	for(ecs::entity_t i = 0; i < entities.count(); i++)
-	{
-		if(entities.mask[i] & ecs::THINK)
-			entities.think_function[i](i);
-	}
-}
-void shoot_system(float dt)
-{
-	for(ecs::entity_t i = 0; i < entities.count(); i++)
-	{
-		if((entities.mask[i] & ecs::shooter_mask) == ecs::shooter_mask)
-		{
-			// guns have a wait_time to wait before they can fire again
-			if(entities.gun[i].wait_time > 0)
-				entities.gun[i].wait_time -= dt;
-			
-			// spawn bullet if gun is ready
-			if(entities.gun[i].fire && entities.gun[i].wait_time <= 0)
-			{
-				entities.gun[i].wait_time += entities.gun[i].delay;
-				entities.gun[i].gun_function(i);
-			}
-		}
-	}
-}
-void accelerate_system(float dt)
-{
-	ecs::mask_t accel_mask = ecs::VELOCITY | ecs::ACCELERATION;
-	for(ecs::entity_t i = 0; i < entities.count(); i++)
-	{
-		if((entities.mask[i] & accel_mask) == accel_mask)
-		{
-			entities.velocity[i] += dt * entities.acceleration[i];
-		}
-	}
-}
-void move_system(float dt)
-{
-	ecs::mask_t move_mask = ecs::POSITION | ecs::VELOCITY;
-	for(ecs::entity_t i = 0; i < entities.count(); i++)
-	{
-		if((entities.mask[i] & move_mask) == move_mask)
-		{
-			entities.position[i] += dt * entities.velocity[i];
-		}
-	}
-}
-void collision_system(void)
-{
-	// first construct collision shape for entities that can collide
-	struct Object{
-		ecs::entity_t id;
-		Circ shape;
-	};
-	std::vector<Object> players;
-	std::vector<Object> enemies;
-	for(ecs::entity_t i = 0; i < entities.count(); i++)
-	{
-		if((entities.mask[i] & ecs::collision_effect_mask) == ecs::collision_effect_mask)
-		{
-			Object obj;
-			obj.id = i;
-			obj.shape = Circ(entities.position[i], entities.size[i].w / 2.5);
-			if(entities.faction[i] == Faction::PLAYER)
-				players.push_back(obj);
-			else if(entities.faction[i] == Faction::ENEMY)
-				enemies.push_back(obj);
-		}
-	}
-	
-	// test the two groups against each other
-	for(Object & i : players)
-	{
-		for(Object & j : enemies)
-		{
-			if(i.shape.intersects(j.shape))
-			{
-				entities.collision_effect[i.id](j.id);
-				entities.collision_effect[j.id](i.id);
-			}
-		}
-	}
-}
-void timer_system(float dt)
-{
-	for(ecs::entity_t i = 0; i < entities.count(); i++)
-	{
-		if((entities.mask[i] & ecs::TIMER) == ecs::TIMER)
-		{
-			entities.timer[i] -= dt;
-			if(entities.timer[i] <= 0 && entities.timer_function[i] != nullptr)
-				entities.timer_function[i](i);
-		}
-	}
-}
-void death_system(void)
-{
-	for(ecs::entity_t i = 0; i < entities.count(); i++)
-	{
-		bool dead = ((entities.mask[i] & ecs::HEALTH) && entities.health[i] <= 0);
-		if(dead && entities.death_function[i] != nullptr)
-			entities.death_function[i](i);
-	}
-}
-void update_camera(void)
+
+
+
+void update_camera(ecs::Entity & entities)
 {
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
@@ -511,7 +406,7 @@ void update_camera(void)
 			
 }
 
-void despawn_enemy(void)
+void despawn_enemy(ecs::Entity & entities)
 {
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
@@ -525,6 +420,8 @@ void despawn_enemy(void)
 		}
 	}
 }
+
+
 void spawn_star(void)
 {
 	if((rand() % 1000) < 10 && stars.size() < 100)
@@ -534,36 +431,33 @@ void spawn_star(void)
 }
 void despawn_star(void)
 {
-	while((not stars.empty()) && stars.front().y > camera.getBottom())
+	while((not stars.empty()) and (stars.front().y > camera.getBottom()))
 	{
 		stars.pop_front();
 	}
 }
-void update(float const dt)
+void update(ecs::Entity & entities, float const dt)
 {
-	think_system();
-	shoot_system(dt);
+	entities.thinkSystem();
+	entities.shootSystem(dt);
 	
-	accelerate_system(dt);
-	move_system(dt);
+	entities.accelSystem(dt);
+	entities.moveSystem(dt);
 	
-	collision_system();
-	timer_system(dt);
-	death_system();
+	entities.collisionSystem();
+	entities.timerSystem(dt);
+	entities.deathSystem();
 	
-	update_camera();
+	update_camera(entities);
 	
-	spawn_enemies();
-	despawn_enemy();
+	spawn_enemies(entities);
+	despawn_enemy(entities);
 	spawn_star();
 	despawn_star();
 	
 }
-void draw(void)
+void draw_stars(void)
 {
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-	SDL_RenderClear(renderer);
-	// draw stars
 	SDL_Texture * star_tex = textures.load(star_pixels, {{'*', {120, 120, 120}}}, {255, 0, 0});
 	for(auto & i : stars)
 	{
@@ -573,20 +467,15 @@ void draw(void)
 		SDL_QueryTexture(star_tex, nullptr, nullptr, &position.w, &position.h);
 		SDL_RenderCopy(renderer, star_tex, nullptr, &position);
 	}
+}
+
+void draw(ecs::Entity & entities)
+{
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+	SDL_RenderClear(renderer);
 	
-	// draw entities (space fighters and bullets)
-	ecs::mask_t draw_mask = ecs::POSITION | ecs::IMAGE;
-	for(ecs::entity_t i = 0; i < entities.count(); i++)
-	{
-		if((entities.mask[i] & draw_mask) == draw_mask)
-		{
-			SDL_Rect position;
-			SDL_QueryTexture(entities.image[i], nullptr, nullptr, &position.w, &position.h);
-			position.x = int(entities.position[i].x) - position.w / 2 - int(camera.x);
-			position.y = int(entities.position[i].y) - position.h / 2 - int(camera.y);
-			SDL_RenderCopyEx(renderer, entities.image[i], nullptr, &position, (entities.direction[i] + PI / 2.0) * 180 / PI, nullptr, SDL_FLIP_NONE);
-		}
-	}
+	draw_stars();
+	entities.drawSystem(renderer, camera);
 	
 	SDL_RenderPresent(renderer);
 }
@@ -623,7 +512,9 @@ int main(int argc, char ** argv)
 	init_system();
 	init_state();
 	
-	entities.spawn_player();
+	static ecs::Entity entities;
+	
+	spawn_player(entities);
 	
 	Uint32 frame_begin = 0, frame_end = 0;
 	float dt = 0.017;
@@ -637,10 +528,10 @@ int main(int argc, char ** argv)
 			dt = 1.0 / 30.0;
 		while(dt > 0)
 		{
-			update(dt_unit);
+			update(entities, dt_unit);
 			dt -= dt_unit;
 		}
-		draw();
+		draw(entities);
 		
 		frame_end = SDL_GetTicks();
 		dt += (float)(frame_end - frame_begin) / 1000.0;

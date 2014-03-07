@@ -2,6 +2,7 @@
 #define ENTITY_H
 #include "components.h"
 #include <stack>
+#include "Rect.h"
 unsigned constexpr BIT(unsigned n)
 {
 	return 1 << n;
@@ -54,13 +55,25 @@ namespace ecs{
 		std::function<void(entity_t)> timer_function[MAX_ENTITIES];
 		std::function<void(entity_t)> collision_effect[MAX_ENTITIES];
 		
+		// important methods
 		Entity(void);
+		Entity(Entity const &) = delete;
+		Entity const & operator=(Entity const &) = delete;
 		entity_t claim(void);
 		void remove(entity_t i);
 		unsigned count(void) const;
 		unsigned capacity(void) const;
 		
-		void spawn_player(void);
+		// systems
+		void thinkSystem(void);
+		void shootSystem(float dt);
+		void accelSystem(float dt);
+		void moveSystem(float dt);
+		void collisionSystem(void);
+		void timerSystem(float dt);
+		void deathSystem(void);
+		void drawSystem(SDL_Renderer * renderer, Rect const & camera);
+		
 	private:
 		unsigned m_count;
 		std::stack<entity_t> holes;
