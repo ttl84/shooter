@@ -5,6 +5,7 @@
 #include <deque>
 #include <stack>
 #include <string>
+#include <map>
 #include <sstream>
 #include <iostream>
 #include <functional>
@@ -15,51 +16,32 @@
 #include "Rect.h"
 #include "Circ.h"
 #include "PI.h"
-#include "TextureStorage.h"
-#include "CharImg.h"
+#include "Image.h"
+#include "Texture.h"
 #include "input.h"
-CharImg const explosion_pixels[3] = {
-{R"(
-    a
-   b  ac
-  abcdcd
-   acbc
-    c
-)"}, {R"(
-     a ba
- bcadc  acb
-cb b cdd
-aca cbcb
-  cdabc  cb
-abcbddb
-  bdcb  abcd
-)"}, {R"(
-   ccbca
-  cabacbaba
-    acba
- c abcaa
-)"}};
-CharImg const player_pixels{R"(
-        *        
-       ***       
-       * *       
-      ** **      
-      ** **      
-     **   **     
-     ** * **     
-     ** * **     
-    *********    
-     *******     
-    * ***** *    
-   *   ***   *   
-  *  * *** *  *  
- ** * * * * * ** 
- ***   ***   *** 
-  **         **  
-   *         *   
-)"};
 
-CharImg const enemy_pixels{R"(
+
+namespace bytes{
+std::string players[] = {R"(
+        a        
+       aaa       
+       a a       
+      aa aa      
+      aa aa      
+     aa   aa     
+     aa b aa     
+     aa b aa     
+     aaabaaa     
+     caaaaaa     
+    ccaaaaacc    
+   ccc ddd ccc   
+  cccc ddd cccc  
+ cccc ddddd cccc 
+cccc   eee   cccc
+        e        
+        e        
+)"};
+std::string enemies[] = {R"(
         a        
         a        
        b b       
@@ -78,41 +60,123 @@ cd     aaa     dc
  d      a      d 
         a
 )"};
-CharImg const laser_pixels{R"(
-*
-*
-*
-* 
-*
-* 
-*
-* 
-*
-* 
-*
-* 
-*
-* 
-*
-* 
-*
-* 
-*
-* 
-*
+std::string bullets[] = {R"(
+a
+a
+a
+a 
+a
+a 
+a
+a 
+a
+a 
+a
+a 
+)"
+,R"(
+  a  
+  a  
+aaaaa
+  a  
+  a
 )"};
+std::string stars[] = {
+	"*"
+};
+std::string explosions[] = {
+R"(
+    a
+   b  ac
+  abcdcd
+   acbc
+    c
+)",
+R"(
+     a ba
+ bcadc  acb
+cb b cdd
+aca cbcb
+  cdabc  cb
+abcbddb
+  bdcb  abcd
+)",
+R"(
+   ccbca
+  cabacbaba
+    acba
+ c abcaa
+)"
+};
+}
 
-CharImg const bullet_pixels{R"(
-  *  
-  *  
-*****
-  *  
-  *
-)"};
+namespace palettes{
+Palette players[] = {
+	{
+		{'a', {0, 0, 125}},
+		{'b', {254, 0, 0}},
+		{'c', {0, 255, 0}},
+		{'d', {100, 100, 100}},
+		{'e', {255, 255, 0}}
+		
+	}
+};
+Palette enemies[] = {
+	{
+		{'a', {0, 255, 255}},
+		{'b', {254, 0, 0}},
+		{'c', {0, 0, 250}},
+		{'d', {255, 255, 0}}
+	}
+};
+	
 
-CharImg const star_pixels("*");
 
+Palette explosions[] = {
+	{
+		{'a', {254, 254, 0}},
+		{'b', {254, 0, 0}},
+		{'c', {0, 254, 0}},
+		{'d', {255, 255, 255}}
+	}
+};
 
+Palette bullets[] = {
+	{
+		{'a', {255, 255, 0}}
+	},
+	{
+		{'a', {0, 255, 0}}
+	}
+};
+Palette stars[] = {
+	{
+		{'a', {255, 255, 255}}
+	}
+};
+}
+Pixel colorkey{255, 0, 0};
+
+namespace images{
+Image players[] = {
+	{bytes::players[0], palettes::players[0], colorkey}
+};
+Image enemies[] = {
+	{bytes::enemies[0], palettes::enemies[0], colorkey}
+};
+Image bullets[] = {
+	{bytes::bullets[0], palettes::bullets[0], colorkey},
+	{bytes::bullets[1], palettes::bullets[1], colorkey}
+};
+Image explosions[] = {
+	{bytes::explosions[0], palettes::explosions[0], colorkey},
+	{bytes::explosions[1], palettes::explosions[0], colorkey},
+	{bytes::explosions[2], palettes::explosions[0], colorkey}
+};
+Image stars[] = {
+	{bytes::stars[0], palettes::stars[0], colorkey}
+};
+}
 
 float const dt_unit = 1.0 / 1000.0;
 unsigned window_width = 360;
@@ -126,7 +190,6 @@ Rect camera;
 
 std::deque<Vec2> stars;
 
-TextureStorage textures;
 
 
 
@@ -149,7 +212,7 @@ Gun player_gun(ecs::Entity & entities)
 		ecs::entity_t bullet = entities.claim();
 		entities.mask[bullet] = ecs::bullet_mask;
 		
-		entities.image[bullet] = textures.load(laser_pixels, {{'*', {0, 255, 0}}}, {255, 0, 0});
+		entities.image[bullet] = images::bullets[0].getTexture(renderer);
 		
 		entities.position[bullet] = entities.position[self];
 		entities.velocity[bullet] = entities.velocity[self] + gun.bullet_speed * Vec2::fromAngle(entities.direction[self] + 0.0005 * (float)(rand() % 100 - 50));
@@ -165,11 +228,7 @@ Gun player_gun(ecs::Entity & entities)
 		// visual effect for bullet if it hits something
 		entities.death_function[bullet] = [&entities](ecs::entity_t bullet) -> void{
 			entities.timer[bullet] = 0.5;
-			entities.image[bullet] = textures.load(explosion_pixels[0],
-							{	{'a', {254, 254, 0}},
-								{'b', {254, 0, 0}},
-								{'c', {0, 254, 0}},
-								{'d', {255, 255, 255}}	}, {255, 0, 0});
+			entities.image[bullet] = images::explosions[0].getTexture(renderer);
 			entities.mask[bullet] = ecs::TIMER | ecs::IMAGE | ecs::POSITION;
 			
 		};
@@ -197,7 +256,7 @@ Gun basic_gun(ecs::Entity & entities)
 		if(direction.norm() > 0)
 			direction /= direction.norm();
 		entities.velocity[bullet] = entities.velocity[i] + entities.gun[i].bullet_speed * direction;
-		entities.image[bullet] = textures.load(bullet_pixels, {{'*', {255, 255, 0}}}, {255, 0, 0});
+		entities.image[bullet] = images::bullets[1].getTexture(renderer);
 		entities.timer[bullet] = 4.0;
 		entities.timer_function[bullet] = [&entities](ecs::entity_t i){entities.health[i] = 0;};
 		
@@ -213,7 +272,6 @@ Gun basic_gun(ecs::Entity & entities)
 	g.fire = true;
 	return g;
 }
-
 
 ecs::entity_t get_player(ecs::Entity & entities)
 {
@@ -283,7 +341,7 @@ void spawn_player(ecs::Entity & entities)
 	
 	entities.mask[player] = ecs::player_mask;
 	
-	entities.image[player] = textures.load(player_pixels, {{'*', {255, 255, 255}}}, {255, 0, 0});
+	entities.image[player] = images::players[0].getTexture(renderer);
 	
 	int w, h;
 	SDL_QueryTexture(entities.image[player], nullptr, nullptr, &w, &h);
@@ -314,11 +372,7 @@ ecs::entity_t spawn_enemy(ecs::Entity & entities)
 	
 	entities.mask[enemy] = ecs::enemy_mask;
 	
-	entities.image[enemy] = textures.load(enemy_pixels, {
-		{'a', {0, 255, 255}},
-		{'b', {254, 0, 0}},
-		{'c', {0, 0, 250}},
-		{'d', {255, 255, 0}}}, {255, 0, 0});
+	entities.image[enemy] = images::enemies[0].getTexture(renderer);
 	
 	int w, h;
 	SDL_QueryTexture(entities.image[enemy], nullptr, nullptr, &w, &h);
@@ -343,11 +397,7 @@ ecs::entity_t spawn_enemy(ecs::Entity & entities)
 	{
 		entities.health[enemy] = 1;
 		entities.timer[enemy] = 0.5;
-		entities.image[enemy] = textures.load(explosion_pixels[2],
-							{{'a', {255, 254, 0}},
-							{'b', {254, 0, 0}},
-							{'c', {250, 0, 250}},
-							{'d', {255, 255, 255}}}, {255, 0, 0});
+		entities.image[enemy] = images::explosions[2].getTexture(renderer);
 		entities.mask[enemy] = ecs::IMAGE | ecs::TIMER | ecs::POSITION;
 		entities.mask[enemy] |= ecs::TIMER;
 		entities.timer_function[enemy] = [&entities](ecs::entity_t enemy){entities.remove(enemy);};
@@ -362,6 +412,9 @@ ecs::entity_t spawn_enemy2(ecs::Entity & entities)
 	entities.position[enemy] = Vec2(rand() % window_width, camera.getBottom() - size.h);
 	entities.velocity[enemy] = Vec2(0, -player_speed::fast);
 	entities.direction[enemy] = Vec2(0, -1).angle();
+	
+	entities.image[enemy] = images::enemies[0].getTexture(renderer);
+	
 	entities.mask[enemy] |= ecs::THINK | ecs::ACCELERATION | ecs::TIMER;
 	entities.think_function[enemy] = [&entities](ecs::entity_t i){
 		ecs::entity_t target = entities.target[i];
@@ -398,7 +451,7 @@ void update_camera(ecs::Entity & entities)
 		{
 			float center = entities.position[i].y;
 			float adjustment = entities.velocity[i].y + player_speed::normal;
-			float multiplier = window_height * 0.7 / (player_speed::fast - player_speed::slow);
+			float multiplier = window_height * 0.9 / (player_speed::fast - player_speed::slow);
 			camera.setCenterY(floor(center - adjustment * multiplier));
 			return;
 		}
@@ -458,8 +511,8 @@ void update(ecs::Entity & entities, float const dt)
 }
 void draw_stars(void)
 {
-	SDL_Texture * star_tex = textures.load(star_pixels, {{'*', {120, 120, 120}}}, {255, 0, 0});
-	for(auto & i : stars)
+	SDL_Texture * star_tex = images::stars[0].getTexture(renderer);
+	for(Vec2 & i : stars)
 	{
 		SDL_Rect position;
 		position.x = i.x - camera.x;
@@ -491,7 +544,6 @@ void init_state(void)
 	
 	camera = Rect(0, 0, window_width, window_height);
 	
-	textures = TextureStorage(renderer);
 }
 
 
