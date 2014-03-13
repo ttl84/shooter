@@ -1,6 +1,7 @@
 #include "Entity.h"
 #include "Circ.h"
 #include "Rect.h"
+#include "PI.h"
 #include <vector>
 namespace ecs{
 void Entity::thinkSystem(void)
@@ -127,7 +128,7 @@ void Entity::drawSystem(SDL_Renderer * renderer, Rect const & camera)
 			SDL_QueryTexture(image[i], nullptr, nullptr, &posRect.w, &posRect.h);
 			posRect.x = int(position[i].x) - posRect.w / 2 - int(camera.x);
 			posRect.y = int(position[i].y) - posRect.h / 2 - int(camera.y);
-			SDL_RenderCopyEx(renderer, image[i], nullptr, &posRect, (direction[i] + PI / 2.0) * 180 / PI, nullptr, SDL_FLIP_NONE);
+			SDL_RenderCopyEx(renderer, image[i], nullptr, &posRect, rad2deg(direction[i] + PI / 2.0), nullptr, SDL_FLIP_NONE);
 		}
 	}
 }

@@ -1,27 +1,27 @@
 #include "Entity.h"
 #include <iostream>
 namespace ecs{
-Entity::Entity(void) : mask{0}, m_count{0}
+Entity::Entity(void) : mask{0}, myCount{0}
 {
 	
 }
 entity_t Entity::claim(void)
 {
 	entity_t next;
-	if(holes.empty())
+	if(myHoles.empty())
 	{
-		if(m_count == MAX_ENTITIES)
+		if(myCount == MAX_ENTITIES)
 		{
 			std::cerr << "out of slots for new entity, aborting\n";
 			abort();
 		}
 		else
-			next = m_count++;
+			next = myCount++;
 	}
 	else
 	{
-		next = holes.top();
-		holes.pop();
+		next = myHoles.top();
+		myHoles.pop();
 	}
 	image[next] = nullptr;
 	target[next] = 0;
@@ -33,11 +33,11 @@ entity_t Entity::claim(void)
 void Entity::remove(entity_t i)
 {
 	mask[i] = 0;
-	holes.push(i);
+	myHoles.push(i);
 }
 unsigned Entity::count(void) const
 {
-	return m_count;
+	return myCount;
 }
 unsigned Entity::capacity(void) const
 {

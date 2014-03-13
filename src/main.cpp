@@ -12,12 +12,12 @@
 #include <SDL2/SDL.h>
 
 #include "Entity.h"
+#include "GameState.h"
 #include "components.h"
 #include "Rect.h"
 #include "Circ.h"
 #include "PI.h"
 #include "Image.h"
-#include "Texture.h"
 #include "input.h"
 
 
@@ -26,18 +26,18 @@ std::string players[] = {R"(
         a        
        aaa       
        a a       
-      aa aa      
-      aa aa      
-     aa   aa     
+      aabaa      
+      abbba      
      aa b aa     
      aa b aa     
-     aaabaaa     
-     caaaaaa     
+      a b a      
+     accbcaa     
+     ccaaacc     
     ccaaaaacc    
    ccc ddd ccc   
-  cccc ddd cccc  
- cccc ddddd cccc 
-cccc   eee   cccc
+ ccccc ddd ccccc 
+ccccc ddddd ccccc
+ ccc   eee   ccc 
         e        
         e        
 )"};
@@ -82,7 +82,7 @@ aaaaa
   a
 )"};
 std::string stars[] = {
-	"*"
+	"a"
 };
 std::string explosions[] = {
 R"(
@@ -115,7 +115,7 @@ Palette players[] = {
 	{
 		{'a', {0, 0, 125}},
 		{'b', {254, 0, 0}},
-		{'c', {0, 255, 0}},
+		{'c', {100, 155, 50}},
 		{'d', {100, 100, 100}},
 		{'e', {255, 255, 0}}
 		
@@ -178,15 +178,7 @@ Image stars[] = {
 };
 }
 
-float const dt_unit = 1.0 / 1000.0;
-unsigned window_width = 360;
-unsigned window_height = 360;
-
-SDL_Window * screen = nullptr;
-SDL_Renderer * renderer = nullptr;
-Rect camera;
-
-
+float constexpr TIME_UNIT = 1.0 / 1000.0;
 
 std::deque<Vec2> stars;
 
@@ -198,13 +190,13 @@ namespace player_speed{
 	float slow = 50;
 	float normal = slow + (fast - slow) / 2.0;
 }
-Gun player_gun(ecs::Entity & entities)
+Gun player_gun(ecs::Entity & entities, GameState & state)
 {
 	Gun g;
 	g.delay = 0.1;
 	g.bullet_speed = 550;
 	g.wait_time = 0;
-	g.gun_function = [&entities](ecs::entity_t self) -> void
+	g.gun_function = [&entities, &state](ecs::entity_t self) -> void
 	{
 		
 		Gun const & gun = entities.gun[self];
@@ -212,7 +204,7 @@ Gun player_gun(ecs::Entity & entities)
 		ecs::entity_t bullet = entities.claim();
 		entities.mask[bullet] = ecs::bullet_mask;
 		
-		entities.image[bullet] = images::bullets[0].getTexture(renderer);
+		entities.image[bullet] = images::bullets[0].getTexture(state.getRenderer());
 		
 		entities.position[bullet] = entities.position[self];
 		entities.velocity[bullet] = entities.velocity[self] + gun.bullet_speed * Vec2::fromAngle(entities.direction[self] + 0.0005 * (float)(rand() % 100 - 50));
@@ -226,9 +218,9 @@ Gun player_gun(ecs::Entity & entities)
 		entities.health[bullet] = 2;
 		
 		// visual effect for bullet if it hits something
-		entities.death_function[bullet] = [&entities](ecs::entity_t bullet) -> void{
+		entities.death_function[bullet] = [&entities, &state](ecs::entity_t bullet) -> void{
 			entities.timer[bullet] = 0.5;
-			entities.image[bullet] = images::explosions[0].getTexture(renderer);
+			entities.image[bullet] = images::explosions[0].getTexture(state.getRenderer());
 			entities.mask[bullet] = ecs::TIMER | ecs::IMAGE | ecs::POSITION;
 			
 		};
@@ -238,13 +230,13 @@ Gun player_gun(ecs::Entity & entities)
 	};
 	return g;
 }
-Gun basic_gun(ecs::Entity & entities)
+Gun basic_gun(ecs::Entity & entities, GameState & state)
 {
 	Gun g;
 	g.delay = 0.8;
 	g.bullet_speed = 50;
 	g.wait_time = 0;
-	g.gun_function = [&entities](ecs::entity_t i)
+	g.gun_function = [&entities, &state](ecs::entity_t i)
 	{
 		ecs::entity_t bullet = entities.claim();
 		entities.mask[bullet] = ecs::bullet_mask;
@@ -256,7 +248,7 @@ Gun basic_gun(ecs::Entity & entities)
 		if(direction.norm() > 0)
 			direction /= direction.norm();
 		entities.velocity[bullet] = entities.velocity[i] + entities.gun[i].bullet_speed * direction;
-		entities.image[bullet] = images::bullets[1].getTexture(renderer);
+		entities.image[bullet] = images::bullets[1].getTexture(state.getRenderer());
 		entities.timer[bullet] = 4.0;
 		entities.timer_function[bullet] = [&entities](ecs::entity_t i){entities.health[i] = 0;};
 		
@@ -335,25 +327,28 @@ void keyboard_control(ecs::Entity & entities, ecs::entity_t i)
 	
 }
 
-void spawn_player(ecs::Entity & entities)
+void spawn_player(ecs::Entity & entities, GameState & state)
 {
 	ecs::entity_t player = entities.claim();
 	
 	entities.mask[player] = ecs::player_mask;
 	
-	entities.image[player] = images::players[0].getTexture(renderer);
+	entities.image[player] = images::players[0].getTexture(state.getRenderer());
 	
-	int w, h;
-	SDL_QueryTexture(entities.image[player], nullptr, nullptr, &w, &h);
-	Rect player_rect(0, 0, w, h);
-	player_rect.setCenter(camera.getCenter());
-	entities.position[player] = player_rect.getCenter();
+	{
+		int w, h;
+		SDL_QueryTexture(entities.image[player], nullptr, nullptr, &w, &h);
+		entities.size[player] = Size(w, h);
+	}
+	entities.position[player] = state.camera.getCenter();
+	state.setStart(entities.position[player].y);
+	
 	entities.velocity[player] = player_speed::normal * Vec2(0, -1);
 	entities.acceleration[player] = Vec2(0, 0);
 	entities.direction[player] = Vec2(0, -1).angle();
-	entities.size[player] = Size(w, h);
 	
-	entities.gun[player] = player_gun(entities);
+	
+	entities.gun[player] = player_gun(entities, state);
 	
 	entities.health[player] = 3;
 	
@@ -366,22 +361,22 @@ void spawn_player(ecs::Entity & entities)
 	entities.think_function[player] = [&entities](ecs::entity_t self){keyboard_control(entities, self);};
 	entities.death_function[player] = [&entities](ecs::entity_t self){entities.remove(self);};
 }
-ecs::entity_t spawn_enemy(ecs::Entity & entities)
+ecs::entity_t spawn_enemy(ecs::Entity & entities, GameState & state)
 {
 	ecs::entity_t enemy = entities.claim();
 	
 	entities.mask[enemy] = ecs::enemy_mask;
 	
-	entities.image[enemy] = images::enemies[0].getTexture(renderer);
+	entities.image[enemy] = images::enemies[0].getTexture(state.getRenderer());
 	
 	int w, h;
 	SDL_QueryTexture(entities.image[enemy], nullptr, nullptr, &w, &h);
-	entities.position[enemy] = Vec2(rand() % window_width, camera.getTop() - h);
-	entities.velocity[enemy] = Vec2(0, rand() % 50 + 1);
+	entities.position[enemy] = Vec2(rand() % state.windowWidth - w / 2, state.camera.getTop() - h / 2);
+	entities.velocity[enemy] = Vec2(0, rand() % 50 + 25);
 	entities.direction[enemy] = Vec2(0, 1).angle();
 	entities.size[enemy] = Size(w, h);
 	
-	entities.gun[enemy] = basic_gun(entities);
+	entities.gun[enemy] = basic_gun(entities, state);
 	
 	entities.health[enemy] = 3;
 	
@@ -393,11 +388,11 @@ ecs::entity_t spawn_enemy(ecs::Entity & entities)
 		
 	entities.target[enemy] = get_player(entities);
 	
-	entities.death_function[enemy] = [&entities](ecs::entity_t enemy) -> void
+	entities.death_function[enemy] = [&entities, &state](ecs::entity_t enemy) -> void
 	{
 		entities.health[enemy] = 1;
 		entities.timer[enemy] = 0.5;
-		entities.image[enemy] = images::explosions[2].getTexture(renderer);
+		entities.image[enemy] = images::explosions[2].getTexture(state.getRenderer());
 		entities.mask[enemy] = ecs::IMAGE | ecs::TIMER | ecs::POSITION;
 		entities.mask[enemy] |= ecs::TIMER;
 		entities.timer_function[enemy] = [&entities](ecs::entity_t enemy){entities.remove(enemy);};
@@ -405,15 +400,15 @@ ecs::entity_t spawn_enemy(ecs::Entity & entities)
 	return enemy;
 }
 
-ecs::entity_t spawn_enemy2(ecs::Entity & entities)
+ecs::entity_t spawn_enemy2(ecs::Entity & entities, GameState & state)
 {
-	ecs::entity_t enemy = spawn_enemy(entities);
+	ecs::entity_t enemy = spawn_enemy(entities, state);
 	Size size = entities.size[enemy];
-	entities.position[enemy] = Vec2(rand() % window_width, camera.getBottom() - size.h);
+	entities.position[enemy] = Vec2(rand() % window_width, state.camera.getBottom() - size.h);
 	entities.velocity[enemy] = Vec2(0, -player_speed::fast);
 	entities.direction[enemy] = Vec2(0, -1).angle();
 	
-	entities.image[enemy] = images::enemies[0].getTexture(renderer);
+	entities.image[enemy] = images::enemies[0].getTexture(state.getRenderer());
 	
 	entities.mask[enemy] |= ecs::THINK | ecs::ACCELERATION | ecs::TIMER;
 	entities.think_function[enemy] = [&entities](ecs::entity_t i){
@@ -432,42 +427,43 @@ ecs::entity_t spawn_enemy2(ecs::Entity & entities)
 	return enemy;
 }
 
-void spawn_enemies(ecs::Entity & entities)
+void spawn_enemies(ecs::Entity & entities, GameState & state)
 {
 	unsigned roll = rand();
 	if(roll < 5)
-		spawn_enemy2(entities);
+		spawn_enemy2(entities, state);
 	else if(roll < 20)
-		spawn_enemy(entities);
+		spawn_enemy(entities, state);
 }
 
 
 
-void update_camera(ecs::Entity & entities)
+void update_camera(ecs::Entity & entities, GameState & state)
 {
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
 		if((entities.mask[i] & ecs::CAMERA_FOCUS) == ecs::CAMERA_FOCUS)
 		{
 			float center = entities.position[i].y;
+			state.updateCurrent(center);
 			float adjustment = entities.velocity[i].y + player_speed::normal;
-			float multiplier = window_height * 0.9 / (player_speed::fast - player_speed::slow);
-			camera.setCenterY(floor(center - adjustment * multiplier));
+			float multiplier = state.windowHeight * 0.9 / (player_speed::fast - player_speed::slow);
+			state.camera.setCenterY(floor(center - adjustment * multiplier));
 			return;
 		}
 	}
 			
 }
 
-void despawn_enemy(ecs::Entity & entities)
+void despawn_enemy(ecs::Entity & entities, GameState & state)
 {
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
 		if((entities.mask[i] & ecs::enemy_mask) == ecs::enemy_mask)
 		{
-			if(	(entities.position[i].y > camera.getBottom() &&
+			if(	(entities.position[i].y > state.camera.getBottom() &&
 				entities.velocity[i].y > 0) ||
-				(entities.position[i].y < camera.getTop() &&
+				(entities.position[i].y < state.camera.getTop() &&
 				entities.velocity[i].y < 0))
 				entities.remove(i);
 		}
@@ -475,21 +471,21 @@ void despawn_enemy(ecs::Entity & entities)
 }
 
 
-void spawn_star(void)
+void spawn_star(GameState & state)
 {
 	if((rand() % 1000) < 10 && stars.size() < 100)
 	{
-		stars.push_back(Vec2(rand() % window_width, camera.y - 10));
+		stars.push_back(Vec2(rand() % state.windowWidth, state.camera.y - 10));
 	}
 }
-void despawn_star(void)
+void despawn_star(GameState & state)
 {
-	while((not stars.empty()) and (stars.front().y > camera.getBottom()))
+	while((not stars.empty()) and (stars.front().y > state.camera.getBottom()))
 	{
 		stars.pop_front();
 	}
 }
-void update(ecs::Entity & entities, float const dt)
+void update(ecs::Entity & entities, GameState & state, float const dt)
 {
 	entities.thinkSystem();
 	entities.shootSystem(dt);
@@ -501,72 +497,45 @@ void update(ecs::Entity & entities, float const dt)
 	entities.timerSystem(dt);
 	entities.deathSystem();
 	
-	update_camera(entities);
+	update_camera(entities, state);
 	
-	spawn_enemies(entities);
-	despawn_enemy(entities);
-	spawn_star();
-	despawn_star();
+	spawn_enemies(entities, state);
+	despawn_enemy(entities, state);
+	spawn_star(state);
+	despawn_star(state);
 	
 }
-void draw_stars(void)
+void draw_stars(GameState & state)
 {
-	SDL_Texture * star_tex = images::stars[0].getTexture(renderer);
+	SDL_Texture * star_tex = images::stars[0].getTexture(state.getRenderer());
 	for(Vec2 & i : stars)
 	{
 		SDL_Rect position;
-		position.x = i.x - camera.x;
-		position.y = i.y - camera.y;
+		position.x = i.x - state.camera.x;
+		position.y = i.y - state.camera.y;
 		SDL_QueryTexture(star_tex, nullptr, nullptr, &position.w, &position.h);
-		SDL_RenderCopy(renderer, star_tex, nullptr, &position);
+		SDL_RenderCopy(state.getRenderer(), star_tex, nullptr, &position);
 	}
 }
 
-void draw(ecs::Entity & entities)
+void draw(ecs::Entity & entities, GameState & state)
 {
-	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-	SDL_RenderClear(renderer);
+	SDL_SetRenderDrawColor(state.getRenderer(), 0, 0, 0, 255);
+	SDL_RenderClear(state.getRenderer());
 	
-	draw_stars();
-	entities.drawSystem(renderer, camera);
+	draw_stars(state);
+	entities.drawSystem(state.getRenderer(), state.camera);
 	
-	SDL_RenderPresent(renderer);
-}
-void init_system(void)
-{
-	SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER);
-	
-}
-void init_state(void)
-{
-	screen = SDL_CreateWindow("shooter game", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_width, window_height, 0);
-	renderer = SDL_CreateRenderer(screen, -1, 0);
-	
-	camera = Rect(0, 0, window_width, window_height);
-	
+	SDL_RenderPresent(state.getRenderer());
 }
 
-
-void cleanup_state(void)
-{
-	SDL_DestroyRenderer(renderer);
-	renderer = nullptr;
-	SDL_DestroyWindow(screen);
-	screen = nullptr;
-}
-void cleanup_system(void)
-{
-	SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER);
-	SDL_Quit();
-}
 int main(int argc, char ** argv)
 {
-	init_system();
-	init_state();
-	
 	static ecs::Entity entities;
+	static GameState state("shooter game", 480, 480);
+	state.init();
 	
-	spawn_player(entities);
+	spawn_player(entities, state);
 	
 	Uint32 frame_begin = 0, frame_end = 0;
 	float dt = 0.017;
@@ -580,17 +549,16 @@ int main(int argc, char ** argv)
 			dt = 1.0 / 30.0;
 		while(dt > 0)
 		{
-			update(entities, dt_unit);
-			dt -= dt_unit;
+			update(entities, state, TIME_UNIT);
+			dt -= TIME_UNIT;
 		}
-		draw(entities);
+		draw(entities, state);
 		
 		frame_end = SDL_GetTicks();
 		dt += (float)(frame_end - frame_begin) / 1000.0;
 		snprintf(title, sizeof title,  "%f", dt);
-		SDL_SetWindowTitle(screen, title);
+		SDL_SetWindowTitle(state.getWindow(), title);
 	}
-	cleanup_state();
-	cleanup_system();
+	state.cleanup();
 	return 0;
 }

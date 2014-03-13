@@ -75,8 +75,8 @@ namespace ecs{
 		void drawSystem(SDL_Renderer * renderer, Rect const & camera);
 		
 	private:
-		unsigned m_count;
-		std::stack<entity_t> holes;
+		unsigned myCount;
+		std::stack<entity_t> myHoles;
 	};
 	
 	mask_t constexpr move_mask = POSITION | VELOCITY;
