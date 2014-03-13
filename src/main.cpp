@@ -404,7 +404,7 @@ ecs::entity_t spawn_enemy2(ecs::Entity & entities, GameState & state)
 {
 	ecs::entity_t enemy = spawn_enemy(entities, state);
 	Size size = entities.size[enemy];
-	entities.position[enemy] = Vec2(rand() % window_width, state.camera.getBottom() - size.h);
+	entities.position[enemy] = Vec2(rand() % state.windowWidth, state.camera.getBottom() - size.h);
 	entities.velocity[enemy] = Vec2(0, -player_speed::fast);
 	entities.direction[enemy] = Vec2(0, -1).angle();
 	
@@ -454,7 +454,19 @@ void update_camera(ecs::Entity & entities, GameState & state)
 	}
 			
 }
-
+void update_bounds(ecs::Entity & entities, GameState & state)
+{
+	for(ecs::entity_t i = 0; i < entities.count(); i++)
+	{
+		if((entities.mask[i] & ecs::CAMERA_FOCUS) == ecs::CAMERA_FOCUS)
+		{
+			Vec2 center = entities.position[i];
+			state.updateBounds(center);
+			return;
+		}
+	}
+			
+}
 void despawn_enemy(ecs::Entity & entities, GameState & state)
 {
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
@@ -465,7 +477,10 @@ void despawn_enemy(ecs::Entity & entities, GameState & state)
 				entities.velocity[i].y > 0) ||
 				(entities.position[i].y < state.camera.getTop() &&
 				entities.velocity[i].y < 0))
+			{
+				rand();
 				entities.remove(i);
+			}
 		}
 	}
 }
@@ -473,14 +488,14 @@ void despawn_enemy(ecs::Entity & entities, GameState & state)
 
 void spawn_star(GameState & state)
 {
-	if((rand() % 1000) < 10 && stars.size() < 100)
+	if(stars.size() < 100 and rand() < 1000)
 	{
 		stars.push_back(Vec2(rand() % state.windowWidth, state.camera.y - 10));
 	}
 }
 void despawn_star(GameState & state)
 {
-	while((not stars.empty()) and (stars.front().y > state.camera.getBottom()))
+	while((not stars.empty()) and (stars.front().y > state.bounds.getBottom()))
 	{
 		stars.pop_front();
 	}
@@ -498,6 +513,7 @@ void update(ecs::Entity & entities, GameState & state, float const dt)
 	entities.deathSystem();
 	
 	update_camera(entities, state);
+	update_bounds(entities, state);
 	
 	spawn_enemies(entities, state);
 	despawn_enemy(entities, state);
