@@ -7,7 +7,6 @@
 class GameState{
 	float currentY;
 	float previousY;
-	float startY;
 	float timeElapsed;
 
 	SDL_Renderer * renderer;
@@ -20,11 +19,14 @@ public:
 	Rect bounds;
 
 	GameState(std::string title, unsigned width, unsigned height):
-		windowTitle(title), windowWidth(width), windowHeight(height){}
+		windowTitle(title), windowWidth(width), windowHeight(height)
+	{
+		currentY = previousY = 0;
+	}
 	GameState(GameState const & other) = delete;
-			
-	void setStart(float);
-	void updateCurrent(float);
+	
+	void centerCamera(Vec2 center);
+	void updateCurrentY(float);
 	float getDistanceTravelled(void) const;
 	float getTotalDistance(void) const;
 			

@@ -186,7 +186,7 @@ void spawn_player(ecs::Entity & entities, GameState & state)
 		entities.size[player] = Size(w, h);
 	}
 	entities.position[player] = state.camera.getCenter();
-	state.setStart(entities.position[player].y);
+	state.centerCamera(entities.position[player]);
 	
 	entities.velocity[player] = player_speed::normal * Vec2(0, -1);
 	entities.acceleration[player] = Vec2(0, 0);
@@ -248,8 +248,7 @@ ecs::entity_t spawn_enemy(ecs::Entity & entities, GameState & state)
 ecs::entity_t spawn_enemy2(ecs::Entity & entities, GameState & state)
 {
 	ecs::entity_t enemy = spawn_enemy(entities, state);
-	Size size = entities.size[enemy];
-	entities.position[enemy] = Vec2(rand() % state.windowWidth, state.camera.getBottom() - size.h);
+	entities.position[enemy] = Vec2(rand() % state.windowWidth, state.bounds.getBottom());
 	entities.velocity[enemy] = Vec2(0, -player_speed::fast);
 	entities.direction[enemy] = Vec2(0, -1).angle();
 	
@@ -289,11 +288,11 @@ void update_camera(ecs::Entity & entities, GameState & state)
 	{
 		if((entities.mask[i] & ecs::CAMERA_FOCUS) == ecs::CAMERA_FOCUS)
 		{
-			float center = entities.position[i].y;
-			state.updateCurrent(center);
+			float center_y = entities.position[i].y;
+			state.updateCurrentY(center_y);
 			float adjustment = entities.velocity[i].y + player_speed::normal;
 			float multiplier = state.windowHeight * 0.9 / (player_speed::fast - player_speed::slow);
-			state.camera.setCenterY(floor(center - adjustment * multiplier));
+			state.camera.setCenterY(floor(center_y - adjustment * multiplier));
 			return;
 		}
 	}
@@ -320,7 +319,7 @@ void despawn_enemy(ecs::Entity & entities, GameState & state)
 		{
 			if(	(entities.position[i].y > state.camera.getBottom() &&
 				entities.velocity[i].y > 0) ||
-				(entities.position[i].y < state.camera.getTop() &&
+				(entities.position[i].y < state.bounds.getTop() &&
 				entities.velocity[i].y < 0))
 			{
 				rand();

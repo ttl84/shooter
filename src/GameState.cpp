@@ -22,17 +22,15 @@ void GameState::cleanup(void)
 	SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER);
 	SDL_Quit();
 }
+void GameState::centerCamera(Vec2 center)
+{
+	camera.setCenter(center);
+}
 void GameState::updateBounds(Vec2 center)
 {
 	bounds.setCenter(center);
 }
-void GameState::setStart(float start)
-{
-	startY = start;
-	previousY = start;
-	currentY = start;
-}
-void GameState::updateCurrent(float newY)
+void GameState::updateCurrentY(float newY)
 {
 	previousY = currentY;
 	currentY = newY;
@@ -43,5 +41,5 @@ float GameState :: getDistanceTravelled(void) const
 }
 float GameState :: getTotalDistance(void) const
 {
-	return -(currentY - startY);
+	return -currentY;
 }
