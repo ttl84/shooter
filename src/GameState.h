@@ -4,6 +4,7 @@
 #include "Rect.h"
 #include "Vec2.h"
 #include <string>
+#include <random>
 class GameState{
 	float currentY;
 	float previousY;
@@ -11,6 +12,8 @@ class GameState{
 
 	SDL_Renderer * renderer;
 	SDL_Window * window;
+	
+	std::mt19937 randomGenerator;
 public:
 	std::string const windowTitle;
 	unsigned const windowWidth;
@@ -22,6 +25,8 @@ public:
 		windowTitle(title), windowWidth(width), windowHeight(height)
 	{
 		currentY = previousY = 0;
+		std::random_device rd;
+		randomGenerator = std::mt19937(rd());
 	}
 	GameState(GameState const & other) = delete;
 	
@@ -40,6 +45,7 @@ public:
 
 	SDL_Renderer * getRenderer(void) { return renderer;}
 	SDL_Window * getWindow(void) { return window;}
+	std::mt19937 & getRandomGenerator(void) { return randomGenerator;}
 	
 };
 #endif
