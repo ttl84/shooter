@@ -43,10 +43,7 @@ struct Rect{
 	}
 	Vec2 getPosition(void) const
 	{
-		Vec2 point;
-		point.x = x;
-		point.y = y;
-		return point;
+		return Vec2(x, y);
 	}
 	float getTop(void) const
 	{
@@ -66,14 +63,13 @@ struct Rect{
 	}
 	bool contains(Vec2 const & p)const
 	{
-		return p.x >= x && p.x <= (x + w) &&
-			p.y >= y && p.y <= (y + h);
+		return p.x >= getLeft() and p.x <= getRight() and p.y >= getTop() and p.y <= getBottom();
 	}
 	bool disjoint(Rect const & r)const
 	{
-		return getRight() <= r.getLeft() ||
-			getLeft() >= r.getRight() ||
-			getBottom() <= r.getTop() ||
+		return getRight() <= r.getLeft() or
+			getLeft() >= r.getRight() or
+			getBottom() <= r.getTop() or
 			getTop() >= r.getBottom();
 	}
 	bool intersects(Rect const & r) const
