@@ -1,5 +1,13 @@
 #include "GameState.h"
-
+GameState::GameState(std::string title, unsigned width, unsigned height):
+	windowTitle(title),
+	windowWidth(width),
+	windowHeight(height)
+{
+	currentY = previousY = 0;
+	std::random_device rd;
+	randomGenerator = std::mt19937(rd());
+}
 void GameState::init(void)
 {	
 	SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER);
@@ -8,8 +16,8 @@ void GameState::init(void)
 	renderer = SDL_CreateRenderer(window, -1, 0);
 	
 	camera = Rect(0, 0, windowWidth, windowHeight);
-	bounds.w = camera.w * 1.5;
-	bounds.h = camera.h * 1.5;
+	bounds.w = camera.w;
+	bounds.h = camera.h * 2.0;
 	bounds.setCenter(camera.getCenter());
 }
 void GameState::cleanup(void)
@@ -28,7 +36,7 @@ void GameState::centerCamera(Vec2 center)
 }
 void GameState::updateBounds(Vec2 center)
 {
-	bounds.setCenter(center);
+	bounds.setCenterY(center.y);
 }
 void GameState::updateCurrentY(float newY)
 {

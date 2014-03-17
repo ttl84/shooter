@@ -3,7 +3,9 @@
 #include <map>
 
 #include <string>
-
+#ifdef DEBUG
+	#include <iostream>
+#endif
 #include <functional>
 
 #include "SDL2/SDL.h"
@@ -35,7 +37,7 @@ Gun player_gun(ecs::Entity & entities, GameState & state)
 {
 	Gun g;
 	g.delay = 0.1;
-	g.bullet_speed = 550;
+	g.bullet_speed = 550.0;
 	g.wait_time = 0;
 	g.gun_function = [&entities, &state](ecs::entity_t self) -> void
 	{
@@ -49,7 +51,7 @@ Gun player_gun(ecs::Entity & entities, GameState & state)
 		
 		entities.position[bullet] = entities.position[self];
 		entities.velocity[bullet] = entities.velocity[self] + gun.bullet_speed * 
-			Vec2::fromAngle(entities.direction[self] + std::uniform_real_distribution<float>(-0.01, 0.01)(state.getRandomGenerator()));
+			Vec2::fromAngle(entities.direction[self] + state.randFloat(-0.01, 0.01));
 		entities.direction[bullet] = entities.direction[self];
 		
 		entities.collision_effect[bullet] = [&entities](ecs::entity_t i){
@@ -75,8 +77,8 @@ Gun player_gun(ecs::Entity & entities, GameState & state)
 Gun basic_gun(ecs::Entity & entities, GameState & state)
 {
 	Gun g;
-	g.delay = 0.8;
-	g.bullet_speed = 50;
+	g.delay = state.randFloat(0.2, 1.0);
+	g.bullet_speed = state.randFloat(50.0, 150.0);
 	g.wait_time = 0;
 	g.gun_function = [&entities, &state](ecs::entity_t i)
 	{
@@ -183,7 +185,6 @@ void spawn_player(ecs::Entity & entities, GameState & state)
 		entities.size[player] = Size(w, h);
 	}
 	entities.position[player] = state.camera.getCenter();
-	state.centerCamera(entities.position[player]);
 	
 	entities.velocity[player] = player_speed::normal * Vec2(0, -1);
 	entities.acceleration[player] = Vec2(0, 0);
@@ -217,11 +218,11 @@ ecs::entity_t spawn_enemy(ecs::Entity & entities, GameState & state)
 		entities.size[enemy] = Size(w, h);
 	}
 	{
-		float randomX = std::uniform_real_distribution<float>(state.camera.getLeft(), state.camera.getRight())(state.getRandomGenerator());
+		float randomX = state.randFloat(state.camera.getLeft(), state.camera.getRight());
 		entities.position[enemy] = Vec2(randomX, state.bounds.getTop());
 	}
 	{
-		float randomSpeed = std::uniform_real_distribution<float>(25.0, 70.0)(state.getRandomGenerator());
+		float randomSpeed = state.randFloat(25.0, 70.0);
 		entities.velocity[enemy] = Vec2(0, randomSpeed);
 	}
 	entities.direction[enemy] = Vec2(0, 1).angle();
@@ -269,9 +270,9 @@ ecs::entity_t spawn_enemy2(ecs::Entity & entities, GameState & state)
 		};
 	};
 	entities.timer[enemy] = 10.0;
-	entities.timer_function[enemy] = [&entities](ecs::entity_t i){
-		entities.think_function[i] = [&entities](ecs::entity_t i){
-			entities.acceleration[i] = Vec2(10, -50);
+	entities.timer_function[enemy] = [&entities, &state](ecs::entity_t i){
+		entities.think_function[i] = [&entities, &state](ecs::entity_t i){
+			entities.acceleration[i] = Vec2(state.randFloat(-50, 50), -50);
 		};
 	};
 	return enemy;
@@ -279,7 +280,7 @@ ecs::entity_t spawn_enemy2(ecs::Entity & entities, GameState & state)
 
 void spawn_enemies(ecs::Entity & entities, GameState & state)
 {
-	float roll = std::generate_canonical<float, 10>(state.getRandomGenerator());
+	float roll = state.randRoll();
 	if(roll < 0.0001)
 		spawn_enemy2(entities, state);
 	else if(roll < 0.0002)
@@ -297,7 +298,7 @@ void update_camera(ecs::Entity & entities, GameState & state)
 			float center_y = entities.position[i].y;
 			state.updateCurrentY(center_y);
 			float adjustment = entities.velocity[i].y + player_speed::normal;
-			float multiplier = state.windowHeight * 0.9 / (player_speed::fast - player_speed::slow);
+			float multiplier = state.windowHeight * 0.95 / (player_speed::fast - player_speed::slow);
 			state.camera.setCenterY(floor(center_y - adjustment * multiplier));
 			return;
 		}
@@ -317,19 +318,18 @@ void update_bounds(ecs::Entity & entities, GameState & state)
 	}
 			
 }
-void despawn_enemy(ecs::Entity & entities, GameState & state)
+void despawn_entities(ecs::Entity & entities, GameState & state)
 {
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
-		if((entities.mask[i] & ecs::enemy_mask) == ecs::enemy_mask)
+		if(entities.mask[i] & ecs::POSITION)
 		{
-			if(	(entities.position[i].y > state.camera.getBottom() &&
-				entities.velocity[i].y > 0) ||
-				(entities.position[i].y < state.bounds.getTop() &&
-				entities.velocity[i].y < 0))
+			if(not state.bounds.contains(entities.position[i]))
 			{
-				state.getRandomGenerator().discard(1);
 				entities.remove(i);
+				#ifdef DEBUG
+					std::cout << "despawn\n";
+				#endif
 			}
 		}
 	}
@@ -340,11 +340,14 @@ std::deque<Vec2> stars;
 
 void spawn_star(GameState & state)
 {
-	float roll = std::generate_canonical<float, 10>(state.getRandomGenerator());
+	static std::mt19937 genRoll(0);
+	static std::mt19937 genX(1);
+	float roll = std::generate_canonical<float, 20>(genRoll);
 	if(roll < 0.01)
 	{
-		float randomX = std::uniform_real_distribution<float>(state.camera.getLeft(), state.camera.getRight())(state.getRandomGenerator());
-		stars.push_back(Vec2(randomX, state.camera.y - 10));
+		auto distr = std::uniform_real_distribution<float>(state.camera.getLeft(), state.camera.getRight());
+		float randomX = distr(genX);
+		stars.emplace_back(randomX, state.bounds.getTop());
 	}
 }
 void despawn_star(GameState & state)
@@ -370,7 +373,7 @@ void update(ecs::Entity & entities, GameState & state, float const dt)
 	update_bounds(entities, state);
 	
 	spawn_enemies(entities, state);
-	despawn_enemy(entities, state);
+	despawn_entities(entities, state);
 	spawn_star(state);
 	despawn_star(state);
 	
@@ -378,11 +381,11 @@ void update(ecs::Entity & entities, GameState & state, float const dt)
 void draw_stars(GameState & state)
 {
 	SDL_Texture * star_tex = images::stars[0].getTexture(state.getRenderer());
-	for(Vec2 & i : stars)
+	for(Vec2 & star : stars)
 	{
 		SDL_Rect position;
-		position.x = i.x - state.camera.x;
-		position.y = i.y - state.camera.y;
+		position.x = star.x - state.camera.x;
+		position.y = star.y - state.camera.y;
 		SDL_QueryTexture(star_tex, nullptr, nullptr, &position.w, &position.h);
 		SDL_RenderCopy(state.getRenderer(), star_tex, nullptr, &position);
 	}

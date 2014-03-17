@@ -12,12 +12,12 @@ std::string players[] = {R"(
      aa b aa     
       a b a      
      accbcaa     
-     ccaaacc     
-    ccaaaaacc    
-   ccc ddd ccc   
- ccccc ddd ccccc 
-ccccc ddddd ccccc
- ccc   eee   ccc 
+    cccaaaccc    
+   cdcaaaaacdc   
+  cddc ddd cddc  
+ cdddc eee cdddc 
+cddcc eeeee ccddc
+  cc   eee   cc  
         e        
         e        
 )"};
@@ -43,12 +43,6 @@ cd     aaa     dc
 std::string bullets[] = {R"(
 a
 a
-a
-a 
-a
-a 
-a
-a 
 a
 a 
 a
@@ -93,17 +87,17 @@ R"(
 namespace palettes{
 Palette players[] = {
 	{
-		{'a', {0, 0, 125}},
+		{'a', {150, 150, 125}},
 		{'b', {254, 0, 0}},
-		{'c', {100, 155, 50}},
+		{'c', {200, 200, 200}},
 		{'d', {100, 100, 100}},
-		{'e', {255, 255, 0}}
+		{'e', {255, 250, 0}}
 		
 	}
 };
 Palette enemies[] = {
 	{
-		{'a', {0, 255, 255}},
+		{'a', {0, 255, 0}},
 		{'b', {254, 0, 0}},
 		{'c', {0, 0, 250}},
 		{'d', {255, 255, 0}}
