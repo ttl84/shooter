@@ -1,4 +1,5 @@
 #include "GameState.h"
+#include "debug.h"
 GameState::GameState(std::string title, unsigned width, unsigned height):
 	windowTitle(title),
 	windowWidth(width),
@@ -6,7 +7,9 @@ GameState::GameState(std::string title, unsigned width, unsigned height):
 {
 	currentY = previousY = 0;
 	std::random_device rd;
-	randomGenerator = std::mt19937(rd());
+	auto seed = rd();
+	debug::log << "seed is " << seed << std::endl;
+	randomGenerator = std::mt19937(seed);
 }
 void GameState::init(void)
 {	

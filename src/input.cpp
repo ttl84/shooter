@@ -1,5 +1,6 @@
 #include "input.h"
 #include <SDL2/SDL.h>
+
 namespace control{
 	bool faster = false;
 	bool slower = false;
@@ -8,7 +9,6 @@ namespace control{
 	bool fire = false;
 	bool quit = false;
 }
-
 void handle_event(void)
 {
 	SDL_Event e;

@@ -12,7 +12,7 @@ endif
 LDFLAGS+=-lSDL2main -lSDL2
 CFLAGS+=-std=c++0x\
 	-pedantic-errors -Wstrict-aliasing=0 -Wall\
-	-g\
+	-g -DDEBUG
 
 #file names and directories
 DIR=src src/container

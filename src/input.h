@@ -1,5 +1,6 @@
 #ifndef input_H
 #define input_H
+
 namespace control{
 	extern bool faster;
 	extern bool slower;

@@ -1,11 +1,7 @@
 #include <vector>
 #include <deque>
 #include <map>
-
 #include <string>
-#ifdef DEBUG
-	#include <iostream>
-#endif
 #include <functional>
 
 #include "SDL2/SDL.h"
@@ -22,7 +18,7 @@
 #include "images.h"
 #include "input.h"
 
-
+#include "debug.h"
 
 
 
@@ -113,7 +109,7 @@ ecs::entity_t get_player(ecs::Entity & entities)
 {
 	ecs::entity_t i;
 	for(i = 0; i < entities.count(); i++)
-		if(entities.mask[i] == ecs::player_mask)
+		if(entities.mask[i] & ecs::CAMERA_FOCUS)
 			break;
 	return i;
 }
@@ -327,9 +323,6 @@ void despawn_entities(ecs::Entity & entities, GameState & state)
 			if(not state.bounds.contains(entities.position[i]))
 			{
 				entities.remove(i);
-				#ifdef DEBUG
-					std::cout << "despawn\n";
-				#endif
 			}
 		}
 	}
@@ -401,9 +394,14 @@ void draw(ecs::Entity & entities, GameState & state)
 	
 	SDL_RenderPresent(state.getRenderer());
 }
-
+#include "FileReader.h"
+#include <sstream>
 int main(int argc, char ** argv)
 {
+	{
+		std::stringstream iss("1 -1 1.1 -1.1 1e10 -1e10 1.1e10 -1.1e10 1.1e-10");
+		FileReader fr(iss);
+	}
 	float constexpr TIME_UNIT = 1.0 / 1000.0;
 	float constexpr MAX_DT = 1.0 / 30.0;
 	static ecs::Entity entities;
