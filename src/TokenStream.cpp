@@ -8,36 +8,36 @@ bool isEnd(Char const & ch)
 }
 bool isLowerCase(Char const & ch)
 {
-	return not ch.end and 
+	return (not isEnd(ch)) and 
 		ch.c >= 'a' and ch.c <= 'z';
 }
 bool isUpperCase(Char const & ch)
 {
-	return not ch.end and 
+	return (not isEnd(ch)) and 
 		ch.c >= 'A' and ch.c <= 'Z';
 }
 bool isDigit(Char const & ch)
 {
-	return not ch.end and 
+	return (not isEnd(ch)) and 
 		ch.c >= '0' and ch.c <= '9';
 }
 bool isWhitespace(Char const & ch)
 {
-	return not ch.end and 
+	return (not isEnd(ch)) and 
 		(ch.c == ' ' or ch.c == '\n' or ch.c == '\t');
 }
 bool beginsIdentifier(Char const & ch)
 {
-	return not ch.end and
+	return (not isEnd(ch)) and
 		(isLowerCase(ch) or isUpperCase(ch) or ch.c == '_');
 }
 bool beginsString(Char const & ch)
 {
-	return not ch.end and ch.c == '"';
+	return (not isEnd(ch)) and ch.c == '"';
 }
 bool beginsNumber(Char const & ch)
 {
-	return not ch.end and
+	return (not isEnd(ch)) and
 		(ch.c == '-' or isDigit(ch));
 }
 bool inNumber(Char const & ch)
@@ -48,14 +48,18 @@ bool inIdentifier(Char const & ch)
 {
 	return beginsIdentifier(ch) or isDigit(ch);
 }
+bool inString(Char const & ch)
+{
+	return not (isEnd(ch) or beginsString(ch));
+}
 bool toInt(std::string const & lexeme, int & output)
 {
-	return std::stringstream(lexeme) >> output;
+	return std::istringstream(lexeme) >> output;
 	
 }
 bool toReal(std::string const & lexeme, double & output)
 {
-	return std::stringstream(lexeme) >> output;
+	return std::istringstream(lexeme) >> output;
 }
 Token readNumber(CharStream & cs)
 {
@@ -178,8 +182,17 @@ Token readNumber(CharStream & cs)
 			}
 			break;
 		default: //error
-			token.type = Token::Type::ERROR;
-			running = 0;
+			if(not (isEnd(ch) or isWhitespace(ch)))
+			{
+				lexeme += ch;
+				cs.get();
+				ch = cs.peek();
+			}
+			else
+			{
+				token.type = Token::Type::ERROR;
+				running = 0;
+			}
 		}
 	}
 	if(token.type == Token::Type::INTEGER)
@@ -215,14 +228,16 @@ Token readString(CharStream & cs)
 {
 	std::string lexeme;
 	Char first = cs.get();// eat open quote
-	for(Char ch = cs.peek(); not beginsString(ch); ch = cs.peek())
+	for(Char ch = cs.peek(); inString(ch); ch = cs.peek())
 	{
 		lexeme += ch.c;
 		cs.get();
 	}
-	cs.get(); //eat quote
+	Char last = cs.get(); //eat quote
 	Token token{Token::Type::STRING, first};
 	token.lexeme = lexeme;
+	if(last.c != '"')
+		token.type = Token::Type::ERROR;
 	return token;
 }
 Token readError(CharStream & cs)
@@ -230,7 +245,7 @@ Token readError(CharStream & cs)
 	std::string lexeme;
 	Char first = cs.get();
 	lexeme += first.c;
-	for(Char ch = cs.peek(); not isWhitespace(ch); ch = cs.peek())
+	for(Char ch = cs.peek(); not (isWhitespace(ch) or isEnd(ch)); ch = cs.peek())
 	{
 		lexeme += ch.c;
 		cs.get();
