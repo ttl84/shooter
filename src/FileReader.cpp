@@ -9,6 +9,7 @@ FileReader::FileReader(std::istream & is)
 	Token tok;
 	
 	while(ts>>tok)
-		std::cout << tok.lexeme << "\n\n";
+		std::cout << tok.lexeme << ' ' << tok.datum.real << ' ' <<
+		tok.datum.integer <<  ' ' << (tok.type != Token::Type::ERROR) << '\n';
 	
 }

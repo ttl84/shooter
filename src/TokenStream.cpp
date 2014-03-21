@@ -50,12 +50,12 @@ bool inIdentifier(Char const & ch)
 }
 bool toInt(std::string const & lexeme, int & output)
 {
-	return std::istringstream(lexeme) >> output;
+	return std::stringstream(lexeme) >> output;
 	
 }
 bool toReal(std::string const & lexeme, double & output)
 {
-	return std::istringstream(lexeme) >> output;
+	return std::stringstream(lexeme) >> output;
 }
 Token readNumber(CharStream & cs)
 {
@@ -187,7 +187,7 @@ Token readNumber(CharStream & cs)
 		if(not toInt(lexeme, token.datum.integer))
 			token.type = Token::Type::ERROR;
 	}
-	else if(token.type == Token::Type::INTEGER)
+	else if(token.type == Token::Type::REAL)
 	{
 		if(not toReal(lexeme, token.datum.real))
 			token.type = Token::Type::ERROR;

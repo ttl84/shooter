@@ -9,10 +9,8 @@ else
 	BIN = a.out
 endif
 
-LDFLAGS+=-lSDL2main -lSDL2
-CFLAGS+=-std=c++0x\
-	-pedantic-errors -Wstrict-aliasing=0 -Wall\
-	-g -DDEBUG
+LDFLAGS+=-L"../SDL2/lib" -lSDL2main -lSDL2
+CFLAGS+=-std=c++0x -pedantic-errors -Wstrict-aliasing=0 -Wall -g -DDEBUG -I"../SDL2/include"
 
 #file names and directories
 DIR=src src/container

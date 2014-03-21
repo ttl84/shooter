@@ -399,7 +399,7 @@ void draw(ecs::Entity & entities, GameState & state)
 int main(int argc, char ** argv)
 {
 	{
-		std::stringstream iss("1 -1 1.1 -1.1 1e10 -1e10 1.1e10 -1.1e10 1.1e-10");
+		std::stringstream iss("1.1.1 1 -1 1.1 -1.1 1e10 -1e10 1.1e10 -1.1e10 1.1e-10");
 		FileReader fr(iss);
 	}
 	float constexpr TIME_UNIT = 1.0 / 1000.0;
