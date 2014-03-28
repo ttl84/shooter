@@ -135,7 +135,7 @@ Token readNumber(CharStream & cs)
 				cs.get();
 				ch = cs.peek();
 			}
-			else if(ch.c == 'e')
+			else if(ch.c == 'e' or ch.c == 'E')
 			{
 				lexeme += ch.c;
 				cs.get();
@@ -148,8 +148,8 @@ Token readNumber(CharStream & cs)
 				running = 0;
 			}
 			break;
-		case 5: // after exponent, maybe negation
-			if(ch.c == '-')
+		case 5: // after exponent, maybe sign
+			if(ch.c == '-' or ch.c == '+')
 			{
 				lexeme += ch.c;
 				cs.get();
