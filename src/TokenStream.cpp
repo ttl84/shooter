@@ -52,7 +52,7 @@ bool inString(Char const & ch)
 {
 	return not (isEnd(ch) or beginsString(ch));
 }
-bool toInt(std::string const & lexeme, int & output)
+bool toLong(std::string const & lexeme, long & output)
 {
 	return std::istringstream(lexeme) >> output;
 	
@@ -197,7 +197,7 @@ Token readNumber(CharStream & cs)
 	}
 	if(token.type == Token::Type::INTEGER)
 	{
-		if(not toInt(lexeme, token.datum.integer))
+		if(not toLong(lexeme, token.datum.integer))
 			token.type = Token::Type::ERROR;
 	}
 	else if(token.type == Token::Type::REAL)

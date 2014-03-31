@@ -6,7 +6,7 @@ struct Token{
 		NONE, INTEGER, REAL, BOOLEAN, IDENTIFIER, STRING, ERROR, END
 	} type;
 	union{
-		int integer;
+		long integer;
 		double real;
 		bool boolean;
 	} datum;
