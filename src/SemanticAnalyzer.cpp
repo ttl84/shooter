@@ -41,10 +41,18 @@ void SemanticAnalyzer::visit(std::unique_ptr<AST> & tree)
 		visitTop(tree);
 		break;
 	case AST::Type::ASSIGNMENT:
-		return visitAssignment(tree);
+		visitAssignment(tree);
 		break;
+	
+	case AST::Type::BOOLEAN:
+	case AST::Type::INTEGER:
+	case AST::Type::REAL:
+	case AST::Type::IDENTIFIER:
+	case AST::Type::STRING:
+		break;
+	
 	default:
-		logError(tree) << "visit for tree type not implemented" << std::endl;
+		logError(tree) << "visit for tree type " << static_cast<int>(tree->type) << " not implemented" << std::endl;
 	}
 }
 SemanticAnalyzer::SemanticAnalyzer(std::map<std::string, Token> & dataMap)

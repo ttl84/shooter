@@ -66,7 +66,7 @@ Token readNumber(CharStream & cs)
 	std::string lexeme;
 	Char first = cs.peek();
 	Char ch = first;
-	Token token;
+	Token token(first);
 	for(unsigned state = 0, running = 1; running; )
 	{
 		switch(state){
@@ -234,7 +234,7 @@ Token readString(CharStream & cs)
 		cs.get();
 	}
 	Char last = cs.get(); //eat quote
-	Token token{Token::Type::STRING, first};
+	Token token(Token::Type::STRING, first);
 	token.lexeme = lexeme;
 	if(last.c != '"')
 		token.type = Token::Type::ERROR;
@@ -250,7 +250,7 @@ Token readError(CharStream & cs)
 		lexeme += ch.c;
 		cs.get();
 	}
-	Token token{Token::Type::ERROR, first};
+	Token token(Token::Type::ERROR, first);
 	token.lexeme = lexeme;
 	return token;
 }
@@ -284,9 +284,7 @@ Token readToken(CharStream & cs)
 	Char next = cs.peek();
 	if(isEnd(next))
 	{
-		Token token;
-		token.type = Token::Type::END;
-		return token;
+		return Token(Token::Type::END);
 	}
 	else if(beginsString(next))
 		return readString(cs);

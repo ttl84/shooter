@@ -1,0 +1,5 @@
+faster "up"
+slower "down"
+left "left"
+right "right"
+fire "z"

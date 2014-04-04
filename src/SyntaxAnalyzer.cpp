@@ -1,36 +1,49 @@
 #include "SyntaxAnalyzer.h"
-AST * parseError(TokenStream & ts)
+#include <iostream>
+AST * parseError(Token::Type expected, TokenStream & ts)
 {
-	return new AST{AST::Type::ERROR, ts.get()};
+	Token tok = ts.get();
+	std::cerr << "syntax error (" << tok.row << ", " << tok.col << "): "
+		<< "expected token type " << static_cast<int>(expected) << ", got "
+		<< "TOKEN<" << static_cast<int>(tok.type) << ", " << tok.lexeme << ">" << std::endl;
+	return new AST{AST::Type::ERROR, tok};
+}
+AST * unknownError(TokenStream & ts)
+{
+	Token tok = ts.get();
+	std::cerr << "syntax error (" << tok.row << ", " << tok.col << "): "
+		<< "unknown token "
+		<< "TOKEN<" << static_cast<int>(tok.type) << ", " << tok.lexeme << ">" << std::endl;
+	return new AST{AST::Type::ERROR, tok};
 }
 AST * parseIdentifier(TokenStream & ts)
 {
 	if(ts.peek().type != Token::Type::IDENTIFIER)
-		return parseError(ts);
+		return parseError(Token::Type::IDENTIFIER, ts);
 	return new AST{AST::Type::IDENTIFIER, ts.get()};
 }
 AST * parseString(TokenStream & ts)
 {
 	if(ts.peek().type != Token::Type::STRING)
-		return parseError(ts);
+		return parseError(Token::Type::STRING, ts);
 	return new AST{AST::Type::STRING, ts.get()};
 }
 AST * parseInteger(TokenStream & ts)
 {
 	if(ts.peek().type != Token::Type::INTEGER)
-		return parseError(ts);
+		return parseError(Token::Type::INTEGER, ts);
 	return new AST{AST::Type::INTEGER, ts.get()};
 }
 AST * parseReal(TokenStream & ts)
 {
 	if(ts.peek().type != Token::Type::REAL)
-		return parseError(ts);
+		return parseError(Token::Type::REAL, ts);
 	return new AST{AST::Type::REAL, ts.get()};
 }
 AST * parseBoolean(TokenStream & ts)
 {
 	if(ts.peek().type != Token::Type::BOOLEAN)
-		return parseError(ts);
+		return parseError(Token::Type::BOOLEAN, ts);
 	return new AST{AST::Type::BOOLEAN, ts.get()};
 }
 AST * parseLiteral(TokenStream & ts)
@@ -47,13 +60,13 @@ AST * parseLiteral(TokenStream & ts)
 	case Token::Type::BOOLEAN:
 		return parseBoolean(ts);
 	default:
-		return parseError(ts);
+		return unknownError(ts);
 	}
 }
 AST * parseAssignment(TokenStream & ts)
 {
 	if(ts.peek().type != Token::Type::IDENTIFIER)
-		return parseError(ts);
+		return parseError(Token::Type::IDENTIFIER, ts);
 	AST * tree = new AST{AST::Type::ASSIGNMENT, ts.peek()};
 	tree->children.emplace_back(parseIdentifier(ts));
 	tree->children.emplace_back(parseLiteral(ts));
@@ -65,13 +78,14 @@ AST * parseStatement(TokenStream & ts)
 	case Token::Type::IDENTIFIER:
 		return parseAssignment(ts);
 	default:
-		return parseError(ts);
+		std::cerr << "parse statement: ";
+		return unknownError(ts);
 	}
 }
 AST * parseTop(TokenStream & ts)
 {
 	AST * tree = new AST{AST::Type::TOP, ts.peek()};
-	while(ts)
+	while(ts.peek().type != Token::Type::END)
 		tree->children.emplace_back(parseStatement(ts));
 	return tree;
 }

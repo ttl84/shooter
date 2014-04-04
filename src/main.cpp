@@ -395,11 +395,11 @@ void draw(ecs::Entity & entities, GameState & state)
 	SDL_RenderPresent(state.getRenderer());
 }
 #include "FileReader.h"
-#include <sstream>
+#include <fstream>
 int main(int argc, char ** argv)
 {
 	{
-		std::stringstream iss("1.1.1 1 -1 1.1 -1.1 1e10 -1e10 1.1e10 -1.1e10 1.1e-10");
+		std::ifstream iss("config.txt");
 		FileReader fr(iss);
 	}
 	float constexpr TIME_UNIT = 1.0 / 1000.0;

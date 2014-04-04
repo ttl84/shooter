@@ -14,6 +14,7 @@ struct Token{
 	unsigned row, col;
 	Token(Type t):type(t){}
 	Token(Type t, Char first):type(t), row(first.row), col(first.col){}
+	Token(Char first):row(first.row), col(first.col){}
 	Token(void):type(Type::NONE){}
 };
 
