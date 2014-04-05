@@ -2,7 +2,7 @@
 #include <iostream>
 std::ostream & logError(std::unique_ptr<AST> & tree)
 {
-	return std::cerr << "at " << tree->start.row << ", " << tree->start.col << ": ";
+	return std::cerr << "semantic analyzer (" << tree->start.row << ", " << tree->start.col << "): ";
 }
 void SemanticAnalyzer::visitError(std::unique_ptr<AST> & tree)
 {

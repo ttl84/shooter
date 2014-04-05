@@ -1,6 +1,7 @@
 #include "TokenStream.h"
 #include <sstream>
 #include <iostream>
+
 namespace{
 bool isEnd(Char const & ch)
 {

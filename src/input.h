@@ -9,6 +9,6 @@ namespace control{
 	extern bool fire;
 	extern bool quit;
 }
-
+void loadKeys(void);
 void handle_event(void);
 #endif

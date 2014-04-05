@@ -1,16 +1,7 @@
 #ifndef CharStream_H
 #define CharStream_H
 #include <istream>
-struct Char{
-	char c;
-	bool end;
-	unsigned row;
-	unsigned col;
-	operator char(void) const
-	{
-		return c;
-	}
-};
+#include "Char.h"
 class CharStream{
 private:
 	std::istream & is;

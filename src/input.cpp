@@ -1,6 +1,7 @@
 #include "input.h"
-#include <SDL2/SDL.h>
-
+#include "SDL2/SDL.h"
+#include "FileReader.h"
+#include <fstream>
 namespace control{
 	bool faster = false;
 	bool slower = false;
@@ -8,6 +9,124 @@ namespace control{
 	bool right = false;
 	bool fire = false;
 	bool quit = false;
+}
+namespace keys{ //key bindings, can be changed
+	SDL_Keycode
+		faster = SDLK_UP,
+		slower = SDLK_DOWN,
+		left = SDLK_LEFT,
+		right = SDLK_RIGHT,
+		fire = SDLK_z;
+}
+bool strToKeycode(std::string name, SDL_Keycode & output)
+{
+	#define BEGIN_CASE()\
+	if(false){}
+	
+	
+	
+	#define MAP_CASE(str1, str2)\
+	else if(name == str1)\
+		output = SDLK_##str2
+	
+	#define GEN_CASE(str) MAP_CASE(#str, str)
+	
+	#define END_CASE()\
+	else\
+		return false;\
+	return true;\
+	
+	BEGIN_CASE()
+	MAP_CASE("up", UP);
+	MAP_CASE("down", DOWN);
+	MAP_CASE("left", LEFT);
+	MAP_CASE("right", RIGHT);
+	
+	MAP_CASE("backspace", BACKSPACE);
+	
+	MAP_CASE("tab", TAB);
+	MAP_CASE("\t", TAB);
+	
+	MAP_CASE("return", RETURN);
+	MAP_CASE("enter", RETURN);
+	
+	MAP_CASE("space", SPACE);
+	MAP_CASE(" ", SPACE);
+	
+	MAP_CASE("backslash", BACKSLASH);
+	MAP_CASE("\\", BACKSLASH);
+	
+	MAP_CASE("quote", QUOTE);
+	MAP_CASE("'", QUOTE);
+	
+	MAP_CASE("semicolon", SEMICOLON);
+	MAP_CASE(";", SEMICOLON);
+	
+	MAP_CASE("<", COMMA);
+	MAP_CASE(",", COMMA);
+	
+	MAP_CASE(">", PERIOD);
+	MAP_CASE(".", PERIOD);
+	
+	GEN_CASE(a);
+	GEN_CASE(b);
+	GEN_CASE(c);
+	GEN_CASE(d);
+	GEN_CASE(e);
+	GEN_CASE(f);
+	GEN_CASE(g);
+	GEN_CASE(h);
+	GEN_CASE(i);
+	GEN_CASE(j);
+	GEN_CASE(k);
+	GEN_CASE(l);
+	GEN_CASE(m);
+	GEN_CASE(n);
+	GEN_CASE(o);
+	GEN_CASE(p);
+	GEN_CASE(q);
+	GEN_CASE(r);
+	GEN_CASE(s);
+	GEN_CASE(t);
+	GEN_CASE(u);
+	GEN_CASE(v);
+	GEN_CASE(w);
+	GEN_CASE(x);
+	GEN_CASE(y);
+	GEN_CASE(z);
+	
+	GEN_CASE(0);
+	GEN_CASE(1);
+	GEN_CASE(2);
+	GEN_CASE(3);
+	GEN_CASE(4);
+	GEN_CASE(5);
+	GEN_CASE(6);
+	GEN_CASE(7);
+	GEN_CASE(8);
+	GEN_CASE(9);
+	
+	END_CASE()
+	
+	#undef GEN_CASE
+	#undef BEGIN_CASE
+	#undef END_CASE
+}
+void loadKeys(void)
+{
+	std::ifstream is("config.txt");
+	FileReader fr(is);
+	std::string output;
+	if(fr.getString("faster", output))
+		strToKeycode(output, keys::faster);
+	if(fr.getString("slower", output))
+		strToKeycode(output, keys::slower);
+	if(fr.getString("left", output))
+		strToKeycode(output, keys::left);
+	if(fr.getString("right", output))
+		strToKeycode(output, keys::right);
+	if(fr.getString("fire", output))
+		strToKeycode(output, keys::fire);
 }
 void handle_event(void)
 {
@@ -17,15 +136,15 @@ void handle_event(void)
 		if(e.type == SDL_KEYDOWN)
 		{
 			SDL_Keycode symbol = e.key.keysym.sym;
-			if(symbol == SDLK_UP)
+			if(symbol == keys::faster)
 				control::faster = true;
-			else if(symbol == SDLK_DOWN)
+			else if(symbol == keys::slower)
 				control::slower = true;
-			else if(symbol == SDLK_LEFT)
+			else if(symbol == keys::left)
 				control::left = true;
-			else if(symbol == SDLK_RIGHT)
+			else if(symbol == keys::right)
 				control::right = true;
-			else if(symbol == SDLK_z)
+			else if(symbol == keys::fire)
 				control::fire = true;
 			else if(symbol == SDLK_ESCAPE)
 				control::quit = true;
@@ -34,15 +153,15 @@ void handle_event(void)
 		else if(e.type == SDL_KEYUP)
 		{
 			SDL_Keycode symbol = e.key.keysym.sym;
-			if(symbol == SDLK_UP)
+			if(symbol == keys::faster)
 				control::faster = false;
-			else if(symbol == SDLK_DOWN)
+			else if(symbol == keys::slower)
 				control::slower = false;
-			else if(symbol == SDLK_LEFT)
+			else if(symbol == keys::left)
 				control::left = false;
-			else if(symbol == SDLK_RIGHT)
+			else if(symbol == keys::right)
 				control::right = false;
-			else if(symbol == SDLK_z)
+			else if(symbol == keys::fire)
 				control::fire = false;
 		}
 		else if(e.type == SDL_QUIT)

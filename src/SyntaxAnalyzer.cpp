@@ -1,19 +1,23 @@
 #include "SyntaxAnalyzer.h"
 #include <iostream>
+std::ostream & logError(Token & tok)
+{
+	return std::cerr << "syntax error (" << tok.row << ", " << tok.col << "): ";
+}
 AST * parseError(Token::Type expected, TokenStream & ts)
 {
 	Token tok = ts.get();
-	std::cerr << "syntax error (" << tok.row << ", " << tok.col << "): "
+	logError(tok)
 		<< "expected token type " << static_cast<int>(expected) << ", got "
-		<< "TOKEN<" << static_cast<int>(tok.type) << ", " << tok.lexeme << ">" << std::endl;
+		<< tok << std::endl;
 	return new AST{AST::Type::ERROR, tok};
 }
 AST * unknownError(TokenStream & ts)
 {
 	Token tok = ts.get();
-	std::cerr << "syntax error (" << tok.row << ", " << tok.col << "): "
-		<< "unknown token "
-		<< "TOKEN<" << static_cast<int>(tok.type) << ", " << tok.lexeme << ">" << std::endl;
+	logError(tok)
+		<< "unknown token type"
+		<< tok << std::endl;
 	return new AST{AST::Type::ERROR, tok};
 }
 AST * parseIdentifier(TokenStream & ts)

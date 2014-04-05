@@ -14,31 +14,47 @@ FileReader::FileReader(std::istream & is)
 	SemanticAnalyzer(data).visit(tree);
 	
 }
-std::string FileReader::getString(std::string key) const
+bool FileReader::getString(std::string key, std::string & output) const
 {
 	Token tok = data.at(key);
 	if(tok.type != Token::Type::STRING)
-		throw "value of key is not a string";
-	return tok.lexeme;
+		return false;
+	else
+	{
+		output = tok.lexeme;
+		return true;
+	}
 }
-long FileReader::getInteger(std::string key) const
+bool FileReader::getInteger(std::string key, long & output) const
 {
 	Token tok = data.at(key);
 	if(tok.type != Token::Type::INTEGER)
-		throw "value of key is not an integer";
-	return tok.datum.integer;
+		return false;
+	else
+	{
+		output = tok.datum.integer;
+		return true;
+	}
 }
-double FileReader::getReal(std::string key) const
+bool FileReader::getReal(std::string key, double & output) const
 {
 	Token tok = data.at(key);
 	if(tok.type != Token::Type::REAL)
-		throw "value of key is not real";
-	return tok.datum.real;
+		return false;
+	else
+	{
+		output = tok.datum.real;
+		return true;
+	}
 }
-bool FileReader::getBoolean(std::string key) const
+bool FileReader::getBoolean(std::string key, bool & output) const
 {
 	Token tok = data.at(key);
 	if(tok.type != Token::Type::BOOLEAN)
-		throw "value of key is not boolean";
-	return tok.datum.boolean;
+		return false;
+	else
+	{
+		output = tok.datum.boolean;
+		return true;
+	}
 }

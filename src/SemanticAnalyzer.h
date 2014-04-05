@@ -3,7 +3,7 @@
 #include <memory>
 #include <map>
 #include <string>
-#include "TokenStream.h"
+#include "Token.h"
 #include "SyntaxAnalyzer.h"
 class SemanticAnalyzer{
 	std::map<std::string, Token> & data;

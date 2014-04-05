@@ -398,10 +398,6 @@ void draw(ecs::Entity & entities, GameState & state)
 #include <fstream>
 int main(int argc, char ** argv)
 {
-	{
-		std::ifstream iss("config.txt");
-		FileReader fr(iss);
-	}
 	float constexpr TIME_UNIT = 1.0 / 1000.0;
 	float constexpr MAX_DT = 1.0 / 30.0;
 	static ecs::Entity entities;
