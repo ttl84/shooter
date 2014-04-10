@@ -5,7 +5,11 @@
 #include <ostream>
 struct Token{
 	enum class Type{
-		NONE, INTEGER, REAL, BOOLEAN, IDENTIFIER, STRING, ERROR, END
+		NONE, INTEGER, REAL, BOOLEAN, IDENTIFIER, STRING,
+		OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET,
+		ASSIGNMENT,
+		COMMA,
+		ERROR, END
 	} type;
 	union{
 		long integer;

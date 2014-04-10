@@ -41,6 +41,10 @@ bool beginsNumber(Char const & ch)
 	return (not isEnd(ch)) and
 		(ch.c == '-' or isDigit(ch));
 }
+bool beginsOperator(Char const & ch)
+{
+	return ch == ':' or ch == '[' or ch == ']';
+}
 bool inNumber(Char const & ch)
 {
 	return isDigit(ch) or ch.c == '.' or ch.c == 'e';
@@ -221,7 +225,7 @@ Token readIdentifier(CharStream & cs)
 		lexeme += ch.c;
 		cs.get();
 	}
-	Token token{Token::Type::IDENTIFIER, first};
+	Token token(Token::Type::IDENTIFIER, first);
 	token.lexeme = lexeme;
 	return token;
 }
@@ -241,6 +245,27 @@ Token readString(CharStream & cs)
 		token.type = Token::Type::ERROR;
 	return token;
 }
+Token readOperator(CharStream & cs)
+{
+	std::string lexeme;
+	Char first = cs.get();
+	Token tok(first);
+	
+	if(first == '[')
+		tok.type = Token::Type::OPEN_SQUARE_BRACKET;
+	
+	else if(first == ']')
+		tok.type = Token::Type::CLOSE_SQUARE_BRACKET;
+	else if(first == ':' and cs.peek() == '=')
+	{
+		tok.lexeme += cs.get();
+		tok.type = Token::Type::ASSIGNMENT;
+	}
+	else
+		tok.type = Token::Type::ERROR;
+	return tok;
+}
+	
 Token readError(CharStream & cs)
 {
 	std::string lexeme;
@@ -287,12 +312,15 @@ Token readToken(CharStream & cs)
 	{
 		return Token(Token::Type::END);
 	}
+	else if(beginsOperator(next))
+		return readOperator(cs);
+	else if(beginsIdentifier(next))
+		return maybeKeyword(readIdentifier(cs));
 	else if(beginsString(next))
 		return readString(cs);
 	else if(beginsNumber(next))
 		return readNumber(cs);
-	else if(beginsIdentifier(next))
-		return maybeKeyword(readIdentifier(cs));
+	
 	else
 		return readError(cs);
 }

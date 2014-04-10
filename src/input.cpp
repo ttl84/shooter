@@ -1,6 +1,7 @@
 #include "input.h"
 #include "SDL2/SDL.h"
-#include "FileReader.h"
+#include "filereader/FileReader.h"
+#include <iostream>
 #include <fstream>
 namespace control{
 	bool faster = false;
@@ -32,8 +33,10 @@ bool strToKeycode(std::string name, SDL_Keycode & output)
 	#define GEN_CASE(str) MAP_CASE(#str, str)
 	
 	#define END_CASE()\
-	else\
+	else{\
+		std::cerr << "unknown button " << name << std::endl;\
 		return false;\
+	}\
 	return true;\
 	
 	BEGIN_CASE()
@@ -116,17 +119,27 @@ void loadKeys(void)
 {
 	std::ifstream is("config.txt");
 	FileReader fr(is);
-	std::string output;
-	if(fr.getString("faster", output))
-		strToKeycode(output, keys::faster);
-	if(fr.getString("slower", output))
-		strToKeycode(output, keys::slower);
-	if(fr.getString("left", output))
-		strToKeycode(output, keys::left);
-	if(fr.getString("right", output))
-		strToKeycode(output, keys::right);
-	if(fr.getString("fire", output))
-		strToKeycode(output, keys::fire);
+	Object * obj;
+	
+	obj = fr.getString("faster");
+	if(obj != nullptr)
+		strToKeycode(*(obj->datum.string), keys::faster);
+	
+	obj = fr.getString("slower");
+	if(obj != nullptr)
+		strToKeycode(*(obj->datum.string), keys::slower);
+	
+	obj = fr.getString("left");
+	if(obj != nullptr)
+		strToKeycode(*(obj->datum.string), keys::left);
+	
+	obj = fr.getString("right");
+	if(obj != nullptr)
+		strToKeycode(*(obj->datum.string), keys::right);
+	
+	obj = fr.getString("fire");
+	if(obj != nullptr)
+		strToKeycode(*(obj->datum.string), keys::fire);
 }
 void handle_event(void)
 {

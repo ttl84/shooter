@@ -394,8 +394,6 @@ void draw(ecs::Entity & entities, GameState & state)
 	
 	SDL_RenderPresent(state.getRenderer());
 }
-#include "FileReader.h"
-#include <fstream>
 int main(int argc, char ** argv)
 {
 	float constexpr TIME_UNIT = 1.0 / 1000.0;
