@@ -1,7 +1,12 @@
 #ifndef ASTVisitor_h
 #define ASTVisitor_h
+#include "AST.h"
+
 class ASTVisitor{
+public:
 	typedef void visit_t(std::unique_ptr<AST> & tree);
+private:
+	
 	virtual visit_t visitTop = 0;
 	virtual visit_t visitAssignment = 0;
 	virtual visit_t visitIdentifier = 0;
@@ -11,8 +16,8 @@ class ASTVisitor{
 	virtual visit_t visitString = 0;
 	virtual visit_t visitList = 0;
 	virtual visit_t visitError = 0;
-	virtual visit_t visitNone = 0;
 public:
+	
 	void visit(std::unique_ptr<AST> & tree)
 	{
 		switch(tree->type){
@@ -51,10 +56,8 @@ public:
 				visitError(tree);
 				break;
 			
-			case AST::Type::NONE:
-				visitNone(tree);
-				break;
 		}
 	}
+
 };
 #endif

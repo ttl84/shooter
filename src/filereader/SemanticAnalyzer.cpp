@@ -14,18 +14,20 @@ void SemanticAnalyzer::semanticError(void)
 }
 void SemanticAnalyzer::visitError(std::unique_ptr<AST> & tree)
 {
+	logError(tree) << "error node" << std::endl;
 	semanticError();
 }
 void SemanticAnalyzer::visitIdentifier(std::unique_ptr<AST> & tree)
 {
-	if(parent->type == AST::Type::ASSIGNMENT and tree == parent->children.at(0))
+	auto parent = tree->getParent();
+	if(parent->type == AST::Type::ASSIGNMENT and tree == parent->child(0))
 	{
-		symbolTable.insert(tree->start->lexeme);
+		symbolTable.insert(tree->start.lexeme);
 	}
 	else
 	{
 		auto ref = symbolTable.find(tree->start.lexeme);
-		if(ref == data.end())
+		if(ref == symbolTable.end())
 		{
 			logError(tree) << "unbound identifier: [" << tree->start.lexeme << ']' << std::endl;
 			semanticError();
@@ -34,22 +36,16 @@ void SemanticAnalyzer::visitIdentifier(std::unique_ptr<AST> & tree)
 }
 void SemanticAnalyzer::visitAssignment(std::unique_ptr<AST> & tree)
 {
-	auto & left = tree->children.at(0);
-	auto & right = tree->children.at(1);
-	visit(left, tree);
-	visit(right, tree);
-	if(right->type == AST::Type::IDENTIFIER)
-	{
-		
-	}
+	for(auto & child : *tree)
+		visit(child);
 }
 void SemanticAnalyzer::visitList(std::unique_ptr<AST> & tree)
 {
-	for(auto & child : tree->children)
-		visit(child, tree);
+	for(auto & child : *tree)
+		visit(child);
 }
 void SemanticAnalyzer::visitTop(std::unique_ptr<AST> & tree)
 {
-	for(auto & child : tree->children)
-		visit(child, tree);
+	for(auto & child : *tree)
+		visit(child);
 }

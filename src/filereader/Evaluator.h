@@ -3,15 +3,19 @@
 #include <map>
 #include <string>
 #include "Object.h"
-#include "SyntaxAnalyzer.h"
-class Evaluator{
+#include "AST.h"
+#include "ASTVisitor.h"
+class Evaluator : public ASTVisitor{
 	std::map<std::string, Object*> & data;
-	void visitAssignment(std::unique_ptr<AST> & tree);
-	void visitTop(std::unique_ptr<AST> & tree);
+	std::map<AST*, Object*> objectTable;
 	
-	Object * eval(std::unique_ptr<AST> & tree);
+	typedef ASTVisitor::visit_t visit_t;
+	
+	visit_t visitTop, visitAssignment,
+		visitIdentifier, visitInteger, visitBoolean, visitReal, visitString,
+		visitList,
+		visitError;
 public:
 	Evaluator(std::map<std::string, Object*> & table) : data(table){}
-	void visit(std::unique_ptr<AST> & tree);
 };
 #endif
