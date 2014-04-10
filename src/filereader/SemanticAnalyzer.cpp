@@ -1,6 +1,6 @@
 #include "SemanticAnalyzer.h"
 #include <iostream>
-std::ostream & logError(std::unique_ptr<AST> & tree)
+static std::ostream & logError(std::unique_ptr<AST> & tree)
 {
 	return std::cerr << "semantic analyzer (" << tree->start.row << ", " << tree->start.col << "): ";
 }
@@ -34,18 +34,4 @@ void SemanticAnalyzer::visitIdentifier(std::unique_ptr<AST> & tree)
 		}
 	}
 }
-void SemanticAnalyzer::visitAssignment(std::unique_ptr<AST> & tree)
-{
-	for(auto & child : *tree)
-		visit(child);
-}
-void SemanticAnalyzer::visitList(std::unique_ptr<AST> & tree)
-{
-	for(auto & child : *tree)
-		visit(child);
-}
-void SemanticAnalyzer::visitTop(std::unique_ptr<AST> & tree)
-{
-	for(auto & child : *tree)
-		visit(child);
-}
+

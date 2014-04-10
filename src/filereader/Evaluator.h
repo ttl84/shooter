@@ -11,7 +11,7 @@ class Evaluator : public ASTVisitor{
 	
 	typedef ASTVisitor::visit_t visit_t;
 	
-	visit_t visitTop, visitAssignment,
+	visit_t visitAssignment,
 		visitIdentifier, visitInteger, visitBoolean, visitReal, visitString,
 		visitList,
 		visitError;

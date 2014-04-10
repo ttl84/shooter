@@ -6,16 +6,27 @@ class ASTVisitor{
 public:
 	typedef void visit_t(std::unique_ptr<AST> & tree);
 private:
+	void defaultVisit(std::unique_ptr<AST> & tree)
+	{
+		for(auto & child : *tree)
+			visit(child);
+	}
+	#define DECL_VISIT(name)\
+	virtual void name (std::unique_ptr<AST> & tree)\
+	{\
+		defaultVisit(tree);\
+	}
 	
-	virtual visit_t visitTop = 0;
-	virtual visit_t visitAssignment = 0;
-	virtual visit_t visitIdentifier = 0;
-	virtual visit_t visitReal = 0;
-	virtual visit_t visitInteger = 0;
-	virtual visit_t visitBoolean = 0;
-	virtual visit_t visitString = 0;
-	virtual visit_t visitList = 0;
-	virtual visit_t visitError = 0;
+	DECL_VISIT(visitTop)
+	DECL_VISIT(visitAssignment)
+	DECL_VISIT(visitIdentifier)
+	DECL_VISIT(visitReal)
+	DECL_VISIT(visitInteger)
+	DECL_VISIT(visitBoolean)
+	DECL_VISIT(visitString)
+	DECL_VISIT(visitList)
+	DECL_VISIT(visitError)
+	#undef DECL_VISIT
 public:
 	
 	void visit(std::unique_ptr<AST> & tree)

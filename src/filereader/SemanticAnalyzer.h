@@ -11,9 +11,7 @@ class SemanticAnalyzer : public ASTVisitor{
 	
 	typedef ASTVisitor::visit_t visit_t;
 	
-	visit_t visitTop, visitAssignment,
-		visitIdentifier, visitInteger, visitBoolean, visitReal, visitString,
-		visitList, visitError;
+	visit_t visitIdentifier, visitError;
 	
 public:
 	bool bad(void);

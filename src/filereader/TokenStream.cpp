@@ -43,7 +43,7 @@ bool beginsNumber(Char const & ch)
 }
 bool beginsOperator(Char const & ch)
 {
-	return ch == ':' or ch == '[' or ch == ']';
+	return ch == ':' or ch == '[' or ch == ']' or ch == ',';
 }
 bool inNumber(Char const & ch)
 {
@@ -217,37 +217,28 @@ Token readNumber(CharStream & cs)
 }
 Token readIdentifier(CharStream & cs)
 {
-	std::string lexeme;
-	Char first = cs.get();
-	lexeme += first.c;
-	for(Char ch = cs.peek(); inIdentifier(ch); ch = cs.peek())
-	{
-		lexeme += ch.c;
-		cs.get();
-	}
-	Token token(Token::Type::IDENTIFIER, first);
-	token.lexeme = lexeme;
-	return token;
+	Char first = cs.peek();
+	Token tok(Token::Type::IDENTIFIER, first);
+	while(inIdentifier(cs.peek()))
+		tok.lexeme += cs.get();
+	return tok;
 }
 Token readString(CharStream & cs)
 {
-	std::string lexeme;
 	Char first = cs.get();// eat open quote
-	for(Char ch = cs.peek(); inString(ch); ch = cs.peek())
-	{
-		lexeme += ch.c;
-		cs.get();
-	}
+	Token tok(Token::Type::STRING, first);
+	
+	while(inString(cs.peek()))
+		tok.lexeme += cs.get();
+	
 	Char last = cs.get(); //eat quote
-	Token token(Token::Type::STRING, first);
-	token.lexeme = lexeme;
 	if(last.c != '"')
-		token.type = Token::Type::ERROR;
-	return token;
+		tok.type = Token::Type::ERROR;
+	
+	return tok;
 }
 Token readOperator(CharStream & cs)
 {
-	std::string lexeme;
 	Char first = cs.get();
 	Token tok(first);
 	
@@ -256,11 +247,16 @@ Token readOperator(CharStream & cs)
 	
 	else if(first == ']')
 		tok.type = Token::Type::CLOSE_SQUARE_BRACKET;
+	
 	else if(first == ':' and cs.peek() == '=')
 	{
 		tok.lexeme += cs.get();
 		tok.type = Token::Type::ASSIGNMENT;
 	}
+	
+	else if(first == ',')
+		tok.type = Token::Type::COMMA;
+	
 	else
 		tok.type = Token::Type::ERROR;
 	return tok;
@@ -268,19 +264,14 @@ Token readOperator(CharStream & cs)
 	
 Token readError(CharStream & cs)
 {
-	std::string lexeme;
 	Char first = cs.get();
-	lexeme += first.c;
-	for(Char ch = cs.peek(); not (isWhitespace(ch) or isEnd(ch)); ch = cs.peek())
-	{
-		lexeme += ch.c;
-		cs.get();
-	}
-	Token token(Token::Type::ERROR, first);
-	token.lexeme = lexeme;
-	return token;
+	Token tok(Token::Type::ERROR, first);
+	tok.lexeme += first;
+	while(not (isWhitespace(cs.peek()) or isEnd(cs.peek())))
+		tok.lexeme += cs.get();
+	return tok;
 }
-Token maybeKeyword(Token token)
+Token  maybeKeyword(Token token)
 {
 	if(token.type == Token::Type::IDENTIFIER)
 	{
@@ -309,22 +300,24 @@ Token readToken(CharStream & cs)
 	
 	Char next = cs.peek();
 	if(isEnd(next))
-	{
 		return Token(Token::Type::END);
-	}
+
 	else if(beginsOperator(next))
 		return readOperator(cs);
+	
 	else if(beginsIdentifier(next))
 		return maybeKeyword(readIdentifier(cs));
+	
 	else if(beginsString(next))
 		return readString(cs);
+	
 	else if(beginsNumber(next))
 		return readNumber(cs);
 	
 	else
 		return readError(cs);
 }
-}
+}//end namespace
 Token TokenStream::get(void)
 {
 	Token token = nextToken;
