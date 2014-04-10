@@ -1,6 +1,7 @@
 #include "FileReader.h"
 #include <iostream>
 #include <memory>
+#include "TokenStream.h"
 #include "SyntaxAnalyzer.h"
 #include "SemanticAnalyzer.h"
 #include "Evaluator.h"
@@ -49,4 +50,8 @@ Object * FileReader::getReal(std::string key)
 Object * FileReader::getBoolean(std::string key)
 {
 	return getForType(key, Object::Type::BOOLEAN);
+}
+Object * FileReader::getList(std::string key)
+{
+	return getForType(key, Object::Type::LIST);
 }

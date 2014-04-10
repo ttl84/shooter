@@ -3,7 +3,7 @@
 #include <map>
 #include <string>
 #include <istream>
-#include "TokenStream.h"
+
 #include "Object.h"
 class FileReader{
 private:
@@ -17,5 +17,6 @@ public:
 	Object * getInteger(std::string key);
 	Object * getReal(std::string key);
 	Object * getBoolean(std::string key);
+	Object * getList(std::string key);
 };
 #endif

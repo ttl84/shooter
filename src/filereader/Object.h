@@ -16,33 +16,32 @@ struct Object {
 	} datum;
 	
 private:
-	unsigned count;
+	Object(Type init) : type(init){}
 public:
-	Object(Type init) : type(init), count(1){}
-	static Object * inc(Object * obj)
+	static Object * makeInteger()
 	{
-		obj->count++;
+		return new Object(Type::INTEGER);
+	}
+	static Object * makeReal()
+	{
+		return new Object(Type::REAL);
+	}
+	static Object * makeBoolean()
+	{
+		return new Object(Type::BOOLEAN);
+	}
+	static Object * makeString()
+	{
+		auto obj = new Object(Type::STRING);
+		obj->datum.string = new std::string;
 		return obj;
 	}
-	static Object * dec(Object * obj)
+	static Object * makeList()
 	{
-		obj->count--;
-		if(obj->count == 0)
-		{
-			if(obj->type == Type::STRING)
-			{
-				delete obj->datum.string;
-			}
-			else if(obj->type == Type::LIST)
-			{
-				for(auto child : *(obj->datum.list))
-					dec(child);
-				delete obj->datum.list;
-			}
-			delete obj;
-			obj = nullptr;
-		}
+		auto obj = new Object(Type::LIST);
+		obj->datum.list = new std::vector<Object *>;
 		return obj;
 	}
+	
 };
 #endif
