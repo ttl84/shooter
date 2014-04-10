@@ -12,11 +12,11 @@ void SemanticAnalyzer::semanticError(void)
 {
 	badFlag = true;
 }
-void SemanticAnalyzer::visitError(std::unique_ptr<AST> & tree, AST * parent)
+void SemanticAnalyzer::visitError(std::unique_ptr<AST> & tree)
 {
 	semanticError();
 }
-void SemanticAnalyzer::visitIdentifier(std::unique_ptr<AST> & tree, AST * parent)
+void SemanticAnalyzer::visitIdentifier(std::unique_ptr<AST> & tree)
 {
 	if(parent->type == AST::Type::ASSIGNMENT and tree == parent->children.at(0))
 	{
@@ -32,7 +32,7 @@ void SemanticAnalyzer::visitIdentifier(std::unique_ptr<AST> & tree, AST * parent
 		}
 	}
 }
-void SemanticAnalyzer::visitAssignment(std::unique_ptr<AST> & tree, AST * parent)
+void SemanticAnalyzer::visitAssignment(std::unique_ptr<AST> & tree)
 {
 	auto & left = tree->children.at(0);
 	auto & right = tree->children.at(1);
@@ -43,12 +43,12 @@ void SemanticAnalyzer::visitAssignment(std::unique_ptr<AST> & tree, AST * parent
 		
 	}
 }
-void SemanticAnalyzer::visitList(std::unique_ptr<AST> & tree, AST * parent)
+void SemanticAnalyzer::visitList(std::unique_ptr<AST> & tree)
 {
 	for(auto & child : tree->children)
 		visit(child, tree);
 }
-void SemanticAnalyzer::visitTop(std::unique_ptr<AST> & tree, AST * parent)
+void SemanticAnalyzer::visitTop(std::unique_ptr<AST> & tree)
 {
 	for(auto & child : tree->children)
 		visit(child, tree);
