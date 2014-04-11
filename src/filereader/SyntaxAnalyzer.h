@@ -2,5 +2,6 @@
 #define SyntaxAnalyzer_H
 #include "AST.h"
 #include "TokenStream.h"
-AST * parse(TokenStream & ts);
+#include <memory>
+std::unique_ptr<AST> parse(TokenStream & ts);
 #endif

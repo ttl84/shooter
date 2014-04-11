@@ -184,7 +184,7 @@ AST * parseTop(TokenStream & ts)
 	return tree;
 }
 }// end namespace
-AST * parse(TokenStream & ts)
+std::unique_ptr<AST> parse(TokenStream & ts)
 {
-	return parseTop(ts);
+	return std::unique_ptr<AST>(parseTop(ts));
 }
