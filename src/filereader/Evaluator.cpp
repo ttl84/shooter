@@ -19,25 +19,25 @@ void Evaluator::visitBoolean(std::unique_ptr<AST> & tree)
 {
 	auto obj = Object::makeBoolean();
 	obj->datum.boolean = tree->start.datum.boolean;
-	objectTable.emplace(tree.get(), obj);
+	objectTable[tree.get()] = obj;
 }
 void Evaluator::visitInteger(std::unique_ptr<AST> & tree)
 {
 	auto obj = Object::makeInteger();
 	obj->datum.integer = tree->start.datum.integer;
-	objectTable.emplace(tree.get(), obj);
+	objectTable[tree.get()] = obj;
 }
 void Evaluator::visitReal(std::unique_ptr<AST> & tree)
 {
 	auto obj = Object::makeReal();
 	obj->datum.real = tree->start.datum.real;
-	objectTable.emplace(tree.get(), obj);
+	objectTable[tree.get()] = obj;
 }
 void Evaluator::visitString(std::unique_ptr<AST> & tree)
 {
 	auto obj = Object::makeString();
 	*(obj->datum.string) = tree->start.lexeme;
-	objectTable.emplace(tree.get(), obj);
+	objectTable[tree.get()] = obj;
 }
 void Evaluator::visitList(std::unique_ptr<AST> & tree)
 {
@@ -45,15 +45,15 @@ void Evaluator::visitList(std::unique_ptr<AST> & tree)
 	for(auto & child : *tree)
 	{
 		visit(child);
-		Object * childObj = getAndRemove(objectTable, child.get());
+		auto childObj = getAndRemove(objectTable, child.get());
 		obj->datum.list->push_back(childObj);
 	}
-	objectTable.emplace(tree.get(), obj);
+	objectTable[tree.get()] = obj;
 }
 void Evaluator::visitIdentifier(std::unique_ptr<AST> & tree)
 {
 	auto obj = data.at(tree->start.lexeme);
-	objectTable.emplace(tree.get(), obj);
+	objectTable[tree.get()] = obj;
 }
 
 void Evaluator::visitAssignment(std::unique_ptr<AST> & tree)

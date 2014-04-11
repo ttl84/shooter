@@ -3,4 +3,3 @@ slower:= "down"
 left := "left"
 right:="right"
 fire := "z"
-names := [1, 2, 3, 4]

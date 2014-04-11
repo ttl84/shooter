@@ -16,7 +16,7 @@ FileReader::FileReader(std::istream & is)
 	SemanticAnalyzer().visit(tree);
 	Evaluator(data).visit(tree);
 }
-Object * FileReader::get(std::string key)
+std::shared_ptr<Object> FileReader::get(std::string key)
 {
 	auto ref = data.find(key);
 	if(ref == data.end())
@@ -24,7 +24,7 @@ Object * FileReader::get(std::string key)
 	else
 		return ref->second;
 }
-Object * FileReader::getForType(std::string key, Object::Type type)
+std::shared_ptr<Object> FileReader::getForType(std::string key, Object::Type type)
 {
 	auto obj = get(key);
 	if(obj == nullptr)
@@ -34,24 +34,24 @@ Object * FileReader::getForType(std::string key, Object::Type type)
 	else
 		return obj;
 }
-Object * FileReader::getString(std::string key)
+std::shared_ptr<Object> FileReader::getString(std::string key)
 {
 	return getForType(key, Object::Type::STRING);
 }
 
-Object * FileReader::getInteger(std::string key)
+std::shared_ptr<Object> FileReader::getInteger(std::string key)
 {
 	return getForType(key, Object::Type::INTEGER);
 }
-Object * FileReader::getReal(std::string key)
+std::shared_ptr<Object> FileReader::getReal(std::string key)
 {
 	return getForType(key, Object::Type::REAL);
 }
-Object * FileReader::getBoolean(std::string key)
+std::shared_ptr<Object> FileReader::getBoolean(std::string key)
 {
 	return getForType(key, Object::Type::BOOLEAN);
 }
-Object * FileReader::getList(std::string key)
+std::shared_ptr<Object> FileReader::getList(std::string key)
 {
 	return getForType(key, Object::Type::LIST);
 }

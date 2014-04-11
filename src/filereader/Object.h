@@ -2,6 +2,7 @@
 #define Object_h
 #include <string>
 #include <vector>
+#include <memory>
 struct Object {
 	enum class Type {
 		INTEGER, REAL, BOOLEAN, STRING, LIST
@@ -12,46 +13,48 @@ struct Object {
 		double real;
 		bool boolean;
 		std::string * string;
-		std::vector<Object *> * list;
+		std::vector<std::shared_ptr<Object>> * list;
 	} datum;
-	
-private:
-	Object(Type init) : type(init){}
+
+	Object(Type init) : type(init)
+	{
+	}
 	~Object()
 	{
 		if(type == Type::STRING)
+		{
 			delete datum.string;
+			datum.string = nullptr;
+		}
 		else if(type == Type::LIST)
+		{
 			delete datum.list;
+			datum.list = nullptr;
+		}
 	}
-public:
-	static Object * makeInteger()
+	static std::shared_ptr<Object> makeInteger()
 	{
-		return new Object(Type::INTEGER);
+		return std::make_shared<Object>(Type::INTEGER);
 	}
-	static Object * makeReal()
+	static std::shared_ptr<Object> makeReal()
 	{
-		return new Object(Type::REAL);
+		return std::make_shared<Object>(Type::REAL);
 	}
-	static Object * makeBoolean()
+	static std::shared_ptr<Object> makeBoolean()
 	{
-		return new Object(Type::BOOLEAN);
+		return std::make_shared<Object>(Type::BOOLEAN);
 	}
-	static Object * makeString()
+	static std::shared_ptr<Object> makeString()
 	{
-		auto obj = new Object(Type::STRING);
+		auto obj = std::make_shared<Object>(Type::STRING);
 		obj->datum.string = new std::string;
 		return obj;
 	}
-	static Object * makeList()
+	static std::shared_ptr<Object> makeList()
 	{
-		auto obj = new Object(Type::LIST);
-		obj->datum.list = new std::vector<Object *>;
+		auto obj = std::make_shared<Object>(Type::LIST);
+		obj->datum.list = new std::vector<std::shared_ptr<Object>>;
 		return obj;
-	}
-	static void destroy(Object * obj)
-	{
-		delete obj;
 	}
 };
 #endif

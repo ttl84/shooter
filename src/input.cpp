@@ -119,9 +119,8 @@ void loadKeys(void)
 {
 	std::ifstream is("config.txt");
 	FileReader fr(is);
-	Object * obj;
 	
-	obj = fr.getString("faster");
+	auto obj = fr.getString("faster");
 	if(obj != nullptr)
 		strToKeycode(*(obj->datum.string), keys::faster);
 	
