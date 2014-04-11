@@ -17,6 +17,13 @@ struct Object {
 	
 private:
 	Object(Type init) : type(init){}
+	~Object()
+	{
+		if(type == Type::STRING)
+			delete datum.string;
+		else if(type == Type::LIST)
+			delete datum.list;
+	}
 public:
 	static Object * makeInteger()
 	{
@@ -42,6 +49,9 @@ public:
 		obj->datum.list = new std::vector<Object *>;
 		return obj;
 	}
-	
+	static void destroy(Object * obj)
+	{
+		delete obj;
+	}
 };
 #endif
