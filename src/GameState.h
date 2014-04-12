@@ -5,6 +5,7 @@
 #include "Vec2.h"
 #include <string>
 #include <random>
+#include <unordered_map>
 class GameState{
 	float currentY;
 	float previousY;
@@ -12,6 +13,8 @@ class GameState{
 
 	SDL_Renderer * renderer;
 	SDL_Window * window;
+	
+	std::unordered_map<std::string, SDL_Texture*> textureMap;
 	
 	std::mt19937 randomGenerator;
 public:
@@ -22,12 +25,10 @@ public:
 	// objects overlapping with camera will be drawn
 	Rect camera;
 
-	// in general anything outside of bounds will be destroyed, and the edges are spawn points
+	// anything outside of bounds will be destroyed, and the edges are spawn points
 	Rect bounds;
 
-	GameState(std::string title, unsigned width, unsigned height);
-	GameState(GameState const & other) = delete;
-	GameState & operator = (GameState const & other) = delete;
+	
 	
 	// set the center of the camera
 	void centerCamera(Vec2 center);
@@ -42,15 +43,24 @@ public:
 			
 	
 	
-	// initialize sdl2
-	void init(void);
-	
-	// cleanup sdl2
-	void cleanup(void);
+	GameState(std::string title, unsigned width, unsigned height);
+	~GameState();
+	GameState(GameState const & other) = delete;
+	GameState & operator = (GameState const & other) = delete;
 
-	SDL_Renderer * getRenderer(void) { return renderer;}
-	SDL_Window * getWindow(void) { return window;}
-	std::mt19937 & getRandomGenerator(void) { return randomGenerator;}
+	SDL_Texture * loadTexture(std::string name);
+	SDL_Renderer * getRenderer()
+	{
+		return renderer;
+	}
+	SDL_Window * getWindow()
+	{
+		return window;
+	}
+	std::mt19937 & getRandomGenerator()
+	{
+		return randomGenerator;
+	}
 	float randFloat(float low, float high)
 	{
 		return std::uniform_real_distribution<float>(low, high)(randomGenerator);

@@ -13,7 +13,6 @@ class Image{
 	CharImg myBytes;
 	Palette myPalette;
 	Pixel myColorkey;
-	SDL_Texture * myTexture;
 public:
 	CharImg const & getBytes() const
 	{
@@ -28,9 +27,10 @@ public:
 		return myColorkey;
 	}
 	Image(CharImg const & bytes, Palette const & palette, Pixel colorkey)
-	: myBytes{bytes}, myPalette{palette}, myColorkey(colorkey), myTexture{nullptr}
+	: myBytes{bytes}, myPalette{palette}, myColorkey(colorkey)
 	{
 	}
-	SDL_Texture * getTexture(SDL_Renderer *);
+	Image(){}
+	SDL_Texture * makeTexture(SDL_Renderer *);
 };
 #endif

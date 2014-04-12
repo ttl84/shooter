@@ -5,7 +5,7 @@ class CharImg{
 	std::string myChars;
 	unsigned myWidth, myHeight;
 	
-	public:
+public:
 	CharImg(void) : myChars(""), myWidth(0), myHeight(0) {}
 	CharImg(std::string const & s, char delimiter = '\n');
 	unsigned width(void) const

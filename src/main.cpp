@@ -15,7 +15,6 @@
 #include "Circ.h"
 #include "PI.h"
 
-#include "images.h"
 #include "input.h"
 
 #include "debug.h"
@@ -43,7 +42,7 @@ Gun player_gun(ecs::Entity & entities, GameState & state)
 		ecs::entity_t bullet = entities.claim();
 		entities.mask[bullet] = ecs::bullet_mask;
 		
-		entities.image[bullet] = images::bullets[0].getTexture(state.getRenderer());
+		entities.image[bullet] = state.loadTexture("bullet0");
 		
 		entities.position[bullet] = entities.position[self];
 		entities.velocity[bullet] = entities.velocity[self] + gun.bullet_speed * 
@@ -60,7 +59,7 @@ Gun player_gun(ecs::Entity & entities, GameState & state)
 		// visual effect for bullet if it hits something
 		entities.death_function[bullet] = [&entities, &state](ecs::entity_t bullet) -> void{
 			entities.timer[bullet] = 0.5;
-			entities.image[bullet] = images::explosions[0].getTexture(state.getRenderer());
+			entities.image[bullet] = state.loadTexture("explosion0");
 			entities.mask[bullet] = ecs::TIMER | ecs::IMAGE | ecs::POSITION;
 			
 		};
@@ -88,7 +87,7 @@ Gun basic_gun(ecs::Entity & entities, GameState & state)
 		if(direction.norm() > 0)
 			direction /= direction.norm();
 		entities.velocity[bullet] = entities.velocity[i] + entities.gun[i].bullet_speed * direction;
-		entities.image[bullet] = images::bullets[1].getTexture(state.getRenderer());
+		entities.image[bullet] = state.loadTexture("bullet1");
 		entities.timer[bullet] = 4.0;
 		entities.timer_function[bullet] = [&entities](ecs::entity_t i){entities.health[i] = 0;};
 		
@@ -173,7 +172,7 @@ void spawn_player(ecs::Entity & entities, GameState & state)
 	
 	entities.mask[player] = ecs::player_mask;
 	
-	entities.image[player] = images::players[0].getTexture(state.getRenderer());
+	entities.image[player] = state.loadTexture("player");
 	
 	{
 		int w, h;
@@ -206,7 +205,7 @@ ecs::entity_t spawn_enemy(ecs::Entity & entities, GameState & state)
 	
 	entities.mask[enemy] = ecs::enemy_mask;
 	
-	entities.image[enemy] = images::enemies[0].getTexture(state.getRenderer());
+	entities.image[enemy] = state.loadTexture("enemy0");
 	
 	{
 		int w, h;
@@ -240,7 +239,7 @@ ecs::entity_t spawn_enemy(ecs::Entity & entities, GameState & state)
 	{
 		entities.health[enemy] = 1;
 		entities.timer[enemy] = 0.5;
-		entities.image[enemy] = images::explosions[2].getTexture(state.getRenderer());
+		entities.image[enemy] = state.loadTexture("explosion2");
 		entities.mask[enemy] = ecs::IMAGE | ecs::TIMER | ecs::POSITION;
 		entities.mask[enemy] |= ecs::TIMER;
 		entities.timer_function[enemy] = [&entities](ecs::entity_t enemy){entities.remove(enemy);};
@@ -255,7 +254,7 @@ ecs::entity_t spawn_enemy2(ecs::Entity & entities, GameState & state)
 	entities.velocity[enemy] = Vec2(0, -player_speed::fast);
 	entities.direction[enemy] = Vec2(0, -1).angle();
 	
-	entities.image[enemy] = images::enemies[0].getTexture(state.getRenderer());
+	entities.image[enemy] = state.loadTexture("enemy0");
 	
 	entities.mask[enemy] |= ecs::THINK | ecs::ACCELERATION | ecs::TIMER;
 	entities.think_function[enemy] = [&entities](ecs::entity_t i){
@@ -373,7 +372,7 @@ void update(ecs::Entity & entities, GameState & state, float const dt)
 }
 void draw_stars(GameState & state)
 {
-	SDL_Texture * star_tex = images::stars[0].getTexture(state.getRenderer());
+	SDL_Texture * star_tex = state.loadTexture("star");
 	for(Vec2 & star : stars)
 	{
 		SDL_Rect position;
@@ -400,8 +399,6 @@ int main(int argc, char ** argv)
 	float constexpr MAX_DT = 1.0 / 30.0;
 	static ecs::Entity entities;
 	static GameState state("shooter game", 480, 480);
-	state.init();
-	
 	spawn_player(entities, state);
 	
 	Uint32 frame_begin = 0, frame_end = 0;
@@ -423,6 +420,5 @@ int main(int argc, char ** argv)
 		frame_end = SDL_GetTicks();
 		dt += float(frame_end - frame_begin) / 1000.0;
 	}
-	state.cleanup();
 	return 0;
 }

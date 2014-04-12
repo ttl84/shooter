@@ -1,5 +1,5 @@
 #include "Image.h"
-
+#include "debug.h"
 static SDL_Surface * makeSurface(Image const & img)
 {
 	
@@ -27,18 +27,17 @@ static SDL_Surface * makeSurface(Image const & img)
 	SDL_UnlockSurface(surface);
 	return surface;
 }
-SDL_Texture * Image::getTexture(SDL_Renderer * renderer)
+SDL_Texture * Image::makeTexture(SDL_Renderer * renderer)
 {
-	if(myTexture == nullptr)
+	SDL_Texture * texture = NULL;
+	SDL_Surface * surface = makeSurface(*this);
+	if(surface != NULL)
 	{
-		SDL_Texture * texture = NULL;
-		SDL_Surface * surface = makeSurface(*this);
-		if(surface != NULL)
-		{
-			texture = SDL_CreateTextureFromSurface(renderer, surface);
-			SDL_FreeSurface(surface);
-		}
-		myTexture = texture;
+		texture = SDL_CreateTextureFromSurface(renderer, surface);
+		SDL_FreeSurface(surface);
+		
 	}
-	return myTexture;
+	else
+		debug::err << "unable to make surface\n";
+	return texture;
 }
