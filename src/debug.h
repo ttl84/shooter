@@ -1,14 +1,8 @@
 #ifndef debug_h
 #define debug_h
 #include <iostream>
-#ifdef DEBUG
 namespace debug{
-	extern decltype(std::cout) & log;
+	extern decltype(std::cout) & out;
+	extern decltype(std::cout) & err;
 }
-#else
-#include "NullStream.h"
-namespace debug{
-	extern NullStream log;
-}
-#endif
 #endif
