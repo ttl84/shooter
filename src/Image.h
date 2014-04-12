@@ -4,7 +4,7 @@
 
 #include "SDL2/SDL.h"
 #include <map>
-
+#include <iostream>
 struct Pixel{
 	uint8_t r, g, b, a;
 };
@@ -13,6 +13,7 @@ class Image{
 	CharImg myBytes;
 	Palette myPalette;
 	Pixel myColorkey;
+	bool good;
 public:
 	CharImg const & getBytes() const
 	{
@@ -27,10 +28,11 @@ public:
 		return myColorkey;
 	}
 	Image(CharImg const & bytes, Palette const & palette, Pixel colorkey)
-	: myBytes{bytes}, myPalette{palette}, myColorkey(colorkey)
+	: myBytes(bytes), myPalette(palette), myColorkey(colorkey), good(true)
 	{
+		
 	}
-	Image(){}
+	Image() : good(false){}
 	SDL_Texture * makeTexture(SDL_Renderer *);
 };
 #endif

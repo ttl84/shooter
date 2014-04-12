@@ -23,12 +23,18 @@ static SDL_Surface * makeSurface(Image const & img)
 		Pixel pix = (palette.find(c) == palette.end() ? colorkey : palette.at(c));
 		data[i] = SDL_MapRGB(surface->format, pix.r, pix.g, pix.b);
 		i++;
+		
 	}
 	SDL_UnlockSurface(surface);
 	return surface;
 }
 SDL_Texture * Image::makeTexture(SDL_Renderer * renderer)
 {
+	if(not good)
+	{
+		debug::err << "image is not initialized" << std::endl;
+		return nullptr;
+	}
 	SDL_Texture * texture = NULL;
 	SDL_Surface * surface = makeSurface(*this);
 	if(surface != NULL)
@@ -38,6 +44,6 @@ SDL_Texture * Image::makeTexture(SDL_Renderer * renderer)
 		
 	}
 	else
-		debug::err << "unable to make surface\n";
+		debug::err << "unable to make surface" << std::endl;
 	return texture;
 }

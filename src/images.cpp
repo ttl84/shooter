@@ -109,6 +109,7 @@ std::tuple<Image, bool> loadImage(std::string name)
 		return std::make_tuple(Image(), false);
 	}
 	
+	
 	CharImg bytes(*(bytesObject->datum.string));
 	
 	Palette palette;
@@ -118,6 +119,5 @@ std::tuple<Image, bool> loadImage(std::string name)
 	Pixel colourkey = genColourkey(palette);
 	
 	Image image(bytes, palette, colourkey);
-	
 	return std::make_tuple(image, true);
 }

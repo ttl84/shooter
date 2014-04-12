@@ -53,7 +53,7 @@ SDL_Texture* GameState::loadTexture(std::string filename)
 		else
 			texture = image.makeTexture(renderer);
 		if(texture == nullptr)
-			std::cerr << "GameState::loadTexture: unable to load [" << filename << ']' << std::endl;
+			debug::err << "GameState::loadTexture: unable to load [" << filename << ']' << std::endl;
 		textureMap[filename] = texture;
 	}
 	return textureMap[filename];
