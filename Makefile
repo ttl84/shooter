@@ -8,9 +8,9 @@ else
 	RM = rm
 	BIN = a.out
 endif
-
+INCLUDE_DIR := -I"include" -I"include/filereader" -I"../SDL2/include"
 LDFLAGS+=-L"../SDL2/lib" -lSDL2main -lSDL2
-CFLAGS+=-std=c++0x -pedantic-errors -Wstrict-aliasing=0 -Wall -g -DDEBUG -I"../SDL2/include"
+CFLAGS+=-std=c++0x -pedantic-errors -Wstrict-aliasing=0 -Wall -g -DDEBUG $(INCLUDE_DIR)
 
 #file names and directories
 DIR=src src/filereader
