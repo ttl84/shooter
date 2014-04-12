@@ -1,22 +1,23 @@
 #ifndef CharImg_H
 #define CharImg_H
 #include <string>
+#include <tuple>
 class CharImg{
 	std::string myChars;
 	unsigned myWidth, myHeight;
 	
 public:
-	CharImg(void) : myChars(""), myWidth(0), myHeight(0) {}
+	CharImg() : myChars(""), myWidth(0), myHeight(0) {}
 	CharImg(std::string const & s, char delimiter = '\n');
-	unsigned width(void) const
+	unsigned width() const
 	{
 		return myWidth;
 	}
-	unsigned height(void) const
+	unsigned height() const
 	{
 		return myHeight;
 	}
-	std::string const & chars(void) const
+	std::string const & chars() const
 	{
 		return myChars;
 	}
@@ -25,30 +26,11 @@ public:
 		return myChars[row * myWidth + column];
 	}
 
-	int compare(CharImg const & other) const
-	{
-		if(myWidth < other.width())
-			return -1;
-		else if(myWidth > other.width())
-			return 1;
-		else if(myHeight < other.height())
-			return -2;
-		else if(myHeight > other.height())
-			return 2;
-		else if(myChars < other.chars())
-			return -3;
-		else if(myChars > other.chars())
-			return 3;
-		else
-			return 0;
-	}
+
 	bool operator < (CharImg const & other) const
 	{
-		return compare(other) < 0;
-	}
-	bool operator = (CharImg const & other) const
-	{
-		return compare(other) == 0;
+		return std::tie(myWidth, myHeight, myChars) <
+			std::tie(other.myWidth, other.myHeight, other.myChars);
 	}
 
 };
