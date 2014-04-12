@@ -9,9 +9,6 @@ FileReader::FileReader(std::istream & is)
 {
 	CharStream cs(is);
 	TokenStream ts(cs);
-	Token tok;
-	//while(ts >> tok)
-	//	std::cout << tok.row << ' ' << tok.col << ' ' << static_cast<int>(tok.type) << ' ' << tok.lexeme << std::endl;
 	std::unique_ptr<AST> tree(parse(ts));
 	SemanticAnalyzer().visit(tree);
 	Evaluator(data).visit(tree);
@@ -27,9 +24,7 @@ std::shared_ptr<Object> FileReader::get(std::string key)
 std::shared_ptr<Object> FileReader::getForType(std::string key, Object::Type type)
 {
 	auto obj = get(key);
-	if(obj == nullptr)
-		return nullptr;
-	else if(obj->type != type)
+	if(obj == nullptr or obj->type != type)
 		return nullptr;
 	else
 		return obj;
