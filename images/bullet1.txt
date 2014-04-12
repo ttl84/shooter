@@ -1,0 +1,10 @@
+bytes := "
+  a  
+  a  
+aaaaa
+  a  
+  a"
+  
+palette :=[
+		["a", 0, 255, 0]
+	]

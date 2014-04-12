@@ -1,0 +1,27 @@
+bytes := "
+        a        
+       aaa       
+       a a       
+      aabaa      
+      abbba      
+     aa b aa     
+     aa b aa     
+      a b a      
+     accbcaa     
+    cccaaaccc    
+   cdcaaaaacdc   
+  cddc ddd cddc  
+ cdddc eee cdddc 
+cddcc eeeee ccddc
+  cc   eee   cc  
+        e        
+        e        
+"
+
+palette := [
+["a", 150, 150, 125],
+["b", 254, 0, 0],
+["c", 200, 200, 200],
+["d", 100, 100, 100],
+["e", 255, 250, 0]
+]
