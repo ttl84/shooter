@@ -60,24 +60,36 @@ namespace mapping{
 }
 // it's like std::tuple
 namespace list{
-	template <class...Ts> class List{};
-		
+	template <class...Ts>
+	class List{
+		static constexpr unsigned length = 0;
+	};
+	template <class T>
+	struct List<T>{
+		T head;
+		static constexpr unsigned length = 1;
+	};
 	template <class T, class ... Ts>
 	struct List<T, Ts...>{
 		T head;
 		List<Ts...> tail;
+		static constexpr unsigned length = decltype(tail)::length + 1;
 	};
 
-	template<class T, class ... Ts>
-	T& find(List<T, Ts...> & list)
+	template<class T>
+	T& find(List<T> & list)
+	{
+		return list.head;
+	}
+	template<class T, class U, class ... Ts>
+	T& find(List<T, U, Ts...> & list)
 	{
 		return list.head;
 	}
 	
-	template<class T, class T1, class ... Ts>
-	T& find(List<T1, Ts...> & list)
+	template<class T, class U, class ... Ts>
+	T& find(List<U, Ts...> & list)
 	{
-		static_assert(sizeof...(Ts) != 0, "reached end of List, can't find type\n");
 		return find<T>(list.tail);
 	}
 }
@@ -86,21 +98,50 @@ namespace ecs2{
 	enum class Component{
 		POSITION,
 		VELOCITY,
-		ACCELERATION
+		ACCELERATION,
+		GUN
 	};
 	template<Component i, class val_t>
 	struct Decl : public mapping::Mapping<Component, val_t, i>{};
 		
+
+	template<Component i, class T>
+	struct getType;
+	
 	template<Component i, class val_t, class...Ts>
-	val_t& ref(list::List<Ts...> & list)
+	struct getType<i, list::List<Decl<i, val_t>, Ts...>> {
+		typedef val_t type;
+	};
+	template<Component i, class T, class ... Ts>
+	struct getType<i, list::List<T, Ts...>> : getType<i, list::List<Ts...>>{};
+	
+
+	
+	template<Component i, class...Ts>
+	auto ref(list::List<Ts...> & list) -> typename getType<i, list::List<Ts...>>::type&
 	{
-		return list::find<Decl<i, val_t>>(list);
+		typedef typename getType<i, list::List<Ts...>>::type val_t;
+		typedef Decl<i, val_t> decl_t;
+		return list::find< decl_t >(list).val;
 	}
 	
 	typedef list::List<
-		Decl<Component::POSITION, std::vector<Vec2>>,
+		Decl<Component::POSITION, Vec2>,
 		Decl<Component::VELOCITY, Vec2>,
 		Decl<Component::ACCELERATION, Vec2>
 	> World;
-	
+	static inline void hello()
+	{
+		World world;
+		getType<Component::POSITION, World>::type vec;
+		vec.x += 1;
+		
+		list::find< Decl<Component::POSITION, Vec2> >(world);
+		ref<Component::POSITION>(world) = Vec2(1.2, 3.4);
+		ref<Component::VELOCITY>(world) = Vec2(1.2, 3.4);
+		ref<Component::ACCELERATION>(world) = Vec2(1.2, 3.4);
+		
+		// check if there are overhead
+		static_assert(sizeof(World) == sizeof(Decl<Component::POSITION, Vec2>) * 3, "not same size");
+	}
 }
