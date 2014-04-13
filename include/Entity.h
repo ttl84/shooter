@@ -3,13 +3,14 @@
 #include "components.h"
 #include <stack>
 #include "Rect.h"
-unsigned constexpr BIT(unsigned n)
-{
-	return 1 << n;
-}
+
 namespace ecs{
 	typedef uint16_t mask_t;
 	typedef unsigned entity_t;
+	unsigned constexpr BIT(unsigned n)
+	{
+		return 1 << n;
+	}
 	
 	enum flag{
 		POSITION = BIT(0),
@@ -88,4 +89,5 @@ namespace ecs{
 	mask_t constexpr bullet_mask = move_mask | collision_effect_mask | DIRECTION | IMAGE | TIMER | HEALTH;
 	
 }
+
 #endif

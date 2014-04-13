@@ -39,8 +39,9 @@ interpretColourTuple(std::shared_ptr<Object> src)
 	}
 	return std::make_tuple(0, Pixel{0}, false);
 }
-static bool interpretPalette(Palette & dst, std::shared_ptr<Object> src)
+static std::tuple<Palette, bool> interpretPalette(std::shared_ptr<Object> src)
 {
+	Palette dst;
 	if(src->type == Object::Type::LIST)
 	{
 		auto colourObjectList = src->datum.list;
@@ -55,9 +56,9 @@ static bool interpretPalette(Palette & dst, std::shared_ptr<Object> src)
 				dst[symbol]= pixel;
 			}
 		}
-		return true;
+		return std::make_tuple(dst, true);
 	}
-	return false;
+	return std::make_tuple(dst, false);
 }
 static Pixel genColourkey(Palette & pal)
 {
@@ -113,7 +114,9 @@ std::tuple<Image, bool> loadImage(std::string name)
 	CharImg bytes(*(bytesObject->datum.string));
 	
 	Palette palette;
-	if(not interpretPalette(palette, paletteObject))
+	bool goodPalette;
+	std::tie(palette, goodPalette) = interpretPalette(paletteObject);
+	if(not goodPalette)
 		debug::err << "unable to load palette\n";
 	
 	Pixel colourkey = genColourkey(palette);

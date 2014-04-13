@@ -1,4 +1,4 @@
-faster :="space"
+faster :="up"
 slower:= "down"
 left := "left"
 right:="right"
