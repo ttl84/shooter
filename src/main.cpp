@@ -21,7 +21,7 @@
 
 
 
-
+using ecs::Component;
 
 namespace player_speed{
 	float fast = 200;
@@ -60,7 +60,10 @@ Gun player_gun(ecs::Entity & entities, GameState & state)
 		entities.death_function[bullet] = [&entities, &state](ecs::entity_t bullet) -> void{
 			entities.timer[bullet] = 0.5;
 			entities.image[bullet] = state.loadTexture("explosion0");
-			entities.mask[bullet] = ecs::TIMER | ecs::IMAGE | ecs::POSITION;
+			entities.mask[bullet] = ecs::combine(
+				Component::TIMER,
+				Component::IMAGE,
+				Component::POSITION);
 			
 		};
 		
@@ -108,7 +111,7 @@ ecs::entity_t get_player(ecs::Entity & entities)
 {
 	ecs::entity_t i;
 	for(i = 0; i < entities.count(); i++)
-		if(entities.mask[i] & ecs::CAMERA_FOCUS)
+		if(ecs::accepts<Component::CAMERA_FOCUS>(entities.mask[i]))
 			break;
 	return i;
 }
@@ -240,8 +243,10 @@ ecs::entity_t spawn_enemy(ecs::Entity & entities, GameState & state)
 		entities.health[enemy] = 1;
 		entities.timer[enemy] = 0.5;
 		entities.image[enemy] = state.loadTexture("explosion2");
-		entities.mask[enemy] = ecs::IMAGE | ecs::TIMER | ecs::POSITION;
-		entities.mask[enemy] |= ecs::TIMER;
+		entities.mask[enemy] = ecs::combine(
+			Component::IMAGE,
+			Component::TIMER,
+			Component::POSITION);
 		entities.timer_function[enemy] = [&entities](ecs::entity_t enemy){entities.remove(enemy);};
 	};
 	return enemy;
@@ -256,7 +261,7 @@ ecs::entity_t spawn_enemy2(ecs::Entity & entities, GameState & state)
 	
 	entities.image[enemy] = state.loadTexture("enemy0");
 	
-	entities.mask[enemy] |= ecs::THINK | ecs::ACCELERATION | ecs::TIMER;
+	entities.mask[enemy] |= ecs::combine(Component::THINK, Component::ACCELERATION, Component::TIMER);
 	entities.think_function[enemy] = [&entities](ecs::entity_t i){
 		ecs::entity_t target = entities.target[i];
 		entities.velocity[i].y = entities.velocity[target].y + (-50);
@@ -288,7 +293,7 @@ void update_camera(ecs::Entity & entities, GameState & state)
 {
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
-		if((entities.mask[i] & ecs::CAMERA_FOCUS) == ecs::CAMERA_FOCUS)
+		if(ecs::accepts<Component::CAMERA_FOCUS>(entities.mask[i]))
 		{
 			float center_y = entities.position[i].y;
 			state.updateCurrentY(center_y);
@@ -304,7 +309,7 @@ void update_bounds(ecs::Entity & entities, GameState & state)
 {
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
-		if((entities.mask[i] & ecs::CAMERA_FOCUS) == ecs::CAMERA_FOCUS)
+		if(ecs::accepts<Component::CAMERA_FOCUS>(entities.mask[i]))
 		{
 			Vec2 center = entities.position[i];
 			state.updateBounds(center);
@@ -317,7 +322,7 @@ void despawn_entities(ecs::Entity & entities, GameState & state)
 {
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
-		if(entities.mask[i] & ecs::POSITION)
+		if(ecs::accepts<Component::POSITION>(entities.mask[i]))
 		{
 			if(not state.bounds.contains(entities.position[i]))
 			{

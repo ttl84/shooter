@@ -45,7 +45,7 @@ unsigned Entity::capacity(void) const
 }
 }
 
-// maps a constant to a variable
+// maps a constant value to a variable
 namespace mapping{
 	template<class key_t, class val_t, key_t k>
 	struct Mapping{
@@ -58,7 +58,7 @@ namespace mapping{
 		return Mapping<key_t, val_t, k>{};
 	}
 }
-// it's like std::tuple
+// it's like a std::tuple
 namespace list{
 	template <class...Ts>
 	class List{
@@ -94,54 +94,74 @@ namespace list{
 	}
 }
 
+#include <vector>
 namespace ecs2{
 	enum class Component{
 		POSITION,
 		VELOCITY,
 		ACCELERATION,
-		GUN
+		GUN,
+		LAST
 	};
+	
 	template<Component i, class val_t>
 	struct Decl : public mapping::Mapping<Component, val_t, i>{};
 		
 
 	template<Component i, class T>
-	struct getType;
+	struct getDeclType;
 	
 	template<Component i, class val_t, class...Ts>
-	struct getType<i, list::List<Decl<i, val_t>, Ts...>> {
-		typedef val_t type;
+	struct getDeclType<i, list::List<Decl<i, val_t>, Ts...>> {
+		typedef val_t ValueType;
 	};
 	template<Component i, class T, class ... Ts>
-	struct getType<i, list::List<T, Ts...>> : getType<i, list::List<Ts...>>{};
+	struct getDeclType<i, list::List<T, Ts...>> : getDeclType<i, list::List<Ts...>>{};
 	
 
 	
 	template<Component i, class...Ts>
-	auto ref(list::List<Ts...> & list) -> typename getType<i, list::List<Ts...>>::type&
+	auto ref(list::List<Ts...> & list) -> typename getDeclType<i, list::List<Ts...>>::ValueType&
 	{
-		typedef typename getType<i, list::List<Ts...>>::type val_t;
+		typedef typename getDeclType<i, list::List<Ts...>>::ValueType val_t;
 		typedef Decl<i, val_t> decl_t;
 		return list::find< decl_t >(list).val;
 	}
 	
-	typedef list::List<
-		Decl<Component::POSITION, Vec2>,
-		Decl<Component::VELOCITY, Vec2>,
-		Decl<Component::ACCELERATION, Vec2>
-	> World;
-	static inline void hello()
+
+	class World{
+	private:
+		unsigned size;
+		std::stack<unsigned> holes;
+	public:
+		std::vector<uint16_t> masks;
+		list::List<
+			Decl<Component::POSITION, std::vector<Vec2> >,
+			Decl<Component::VELOCITY, std::vector<Vec2>>,
+			Decl<Component::ACCELERATION, std::vector<Vec2>>
+		> cpn;
+		unsigned claim()
+		{
+			unsigned next;
+			if(holes.empty())
+			{
+				next = size++;
+				
+			}
+			else
+			{
+				next = holes.top();
+				holes.pop();
+			}
+			return next;
+		}
+	};
+	static inline void test()
 	{
 		World world;
-		getType<Component::POSITION, World>::type vec;
-		vec.x += 1;
 		
-		list::find< Decl<Component::POSITION, Vec2> >(world);
-		ref<Component::POSITION>(world) = Vec2(1.2, 3.4);
-		ref<Component::VELOCITY>(world) = Vec2(1.2, 3.4);
-		ref<Component::ACCELERATION>(world) = Vec2(1.2, 3.4);
-		
-		// check if there are overhead
-		static_assert(sizeof(World) == sizeof(Decl<Component::POSITION, Vec2>) * 3, "not same size");
+		ref<Component::POSITION>(world.cpn).push_back(Vec2(1.2, 3.4));
+		ref<Component::VELOCITY>(world.cpn).push_back(Vec2(1.2, 3.4));
+		ref<Component::ACCELERATION>(world.cpn).push_back(Vec2(1.2, 3.4));
 	}
 }

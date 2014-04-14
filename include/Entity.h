@@ -7,32 +7,111 @@
 namespace ecs{
 	typedef uint16_t mask_t;
 	typedef unsigned entity_t;
-	unsigned constexpr BIT(unsigned n)
-	{
-		return 1 << n;
-	}
-	
-	enum flag{
-		POSITION = BIT(0),
-		VELOCITY = BIT(1),
-		ACCELERATION = BIT(2),
-		DIRECTION = BIT(3),
-		SIZE = BIT(4),
+	enum class Component{
+		POSITION,
+		VELOCITY,
+		ACCELERATION,
+		DIRECTION,
+		SIZE,
 		
-		IMAGE = BIT(5),
+		IMAGE,
 		
-		HEALTH = BIT(6),
-		TIMER = BIT(7),
-		COLLISION_EFFECT = BIT(8),
+		HEALTH,
+		TIMER,
+		COLLISION_EFFECT,
 		
-		THINK = BIT(9),
+		THINK,
 		
-		FACTION = BIT(10),
-		GUN = BIT(11),
-		CAMERA_FOCUS = BIT(12),
-		TARGET = BIT(13)
+		FACTION,
+		GUN,
+		CAMERA_FOCUS,
+		TARGET
 		
 	};
+	
+	// combine components and masks into one mask
+	constexpr mask_t combine()
+	{
+		return 0;
+	}
+	template<class ... Ts>
+	constexpr mask_t combine(mask_t head, Ts... tail)
+	{
+		return head | combine(tail...);
+	}
+	template<class ... Ts>
+	constexpr mask_t combine(Component head, Ts... tail)
+	{
+		return ((mask_t)(1 << (unsigned) head)) | combine(tail...);
+	}
+	
+	
+	// check if a mask nothing (always true)
+	template<class ... Ts>
+	bool accepts(mask_t mask)
+	{
+		return true;
+	}
+	// checks if a mask satifies constant mask
+	template<mask_t sub>
+	bool accepts(mask_t mask)
+	{
+		return (mask & sub) == sub;
+	}
+	// checks if a mask satifies components
+	template<Component... components>
+	bool accepts(mask_t mask)
+	{
+		return accepts< combine(components...) >(mask);
+	}
+
+	mask_t constexpr move_mask = combine(
+		Component::POSITION,
+		Component::VELOCITY);
+	
+	mask_t constexpr accel_mask = combine(
+		Component::VELOCITY,
+		Component::ACCELERATION);
+	
+	mask_t constexpr collision_effect_mask = combine(
+		Component::POSITION,
+		Component::SIZE,
+		Component::COLLISION_EFFECT);
+	
+	mask_t constexpr draw_mask = combine(
+		Component::POSITION,
+		Component::IMAGE);
+	
+	mask_t constexpr shooter_mask = combine(
+		Component::POSITION,
+		Component::DIRECTION,
+		Component::SIZE,
+		Component::GUN);
+	
+	mask_t constexpr player_mask = combine(
+		move_mask,
+		accel_mask,
+		shooter_mask, 
+		collision_effect_mask,
+		Component::IMAGE,
+		Component::HEALTH,
+		Component::THINK,
+		Component::CAMERA_FOCUS);
+	
+	mask_t constexpr enemy_mask = combine(
+		move_mask,
+		shooter_mask,
+		collision_effect_mask,
+		Component::IMAGE,
+		Component::HEALTH);
+	
+	mask_t constexpr bullet_mask = combine(
+		move_mask, 
+		collision_effect_mask, 
+		Component::DIRECTION,
+		Component::IMAGE, 
+		Component::TIMER, 
+		Component::HEALTH);
 	
 	constexpr unsigned MAX_ENTITIES = 1000;
 	struct Entity{
@@ -65,6 +144,7 @@ namespace ecs{
 		unsigned count(void) const;
 		unsigned capacity(void) const;
 		
+		
 		// systems
 		void thinkSystem(void);
 		void shootSystem(float dt);
@@ -75,18 +155,65 @@ namespace ecs{
 		void deathSystem(void);
 		void drawSystem(SDL_Renderer * renderer, Rect const & camera);
 		
+		
+		// iterator
+		
+		class iterator {
+		private:
+			Entity & entity;
+			mask_t const mask;
+			unsigned i;
+			unsigned const size;
+			
+		public:
+			iterator(Entity & e, mask_t m, unsigned start)
+				: entity(e), mask(m), i(start), size(e.count())
+			{
+				while(i < size and (entity.mask[i] & mask) != mask)
+					i++;
+			}
+			iterator& operator ++()
+			{
+				while(i < size)
+				{
+					i++;
+					if(i == size or (entity.mask[i] & mask) == mask)
+						break;
+				}
+				return *this;
+			}
+			unsigned operator * ()
+			{
+				return i;
+			}
+			bool operator!=(iterator const & other)
+			{
+				return i != other.i;
+			}
+		};
+		struct View{
+			Entity & entity;
+			mask_t const mask;
+			iterator begin()
+			{
+				return iterator(entity, mask, 0);
+			}
+			iterator end()
+			{
+				return iterator(entity, mask, entity.count());
+			}
+		};
+		template<class... Ts>
+		View select(Ts ... args)
+		{
+			return View{*this, combine(args...)};
+		}
+		
 	private:
 		unsigned myCount;
 		std::stack<entity_t> myHoles;
 	};
 	
-	mask_t constexpr move_mask = POSITION | VELOCITY;
-	mask_t constexpr accel_mask = VELOCITY | ACCELERATION;
-	mask_t constexpr collision_effect_mask = POSITION | SIZE | COLLISION_EFFECT;
-	mask_t constexpr shooter_mask = POSITION | DIRECTION | SIZE | GUN;
-	mask_t constexpr player_mask = move_mask | ACCELERATION | shooter_mask | collision_effect_mask | IMAGE | HEALTH | THINK | CAMERA_FOCUS;
-	mask_t constexpr enemy_mask = move_mask | shooter_mask | collision_effect_mask | IMAGE | HEALTH;
-	mask_t constexpr bullet_mask = move_mask | collision_effect_mask | DIRECTION | IMAGE | TIMER | HEALTH;
 	
 }
 
