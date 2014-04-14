@@ -19,4 +19,28 @@ enum class Faction{
 	PLAYER,
 	ENEMY
 };
+namespace ecs{
+	
+	enum class Component{
+		POSITION,
+		VELOCITY,
+		ACCELERATION,
+		DIRECTION,
+		SIZE,
+		
+		IMAGE,
+		
+		HEALTH,
+		TIMER,
+		COLLISION_EFFECT,
+		
+		THINK,
+		
+		FACTION,
+		GUN,
+		CAMERA_FOCUS,
+		TARGET
+		
+	};
+}
 #endif
