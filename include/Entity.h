@@ -69,12 +69,10 @@ namespace ecs{
 			}
 			iterator& operator ++()
 			{
-				while(i < size)
-				{
+				if(i < size)
 					i++;
-					if(i == size or (entity.mask[i] & mask) == mask)
-						break;
-				}
+				while(i < size and (entity.mask[i] & mask) != mask)
+					i++;
 				return *this;
 			}
 			unsigned operator * ()
