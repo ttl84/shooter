@@ -19,6 +19,16 @@ namespace ecs{
 		return ((mask_t)(1 << (unsigned) head)) | combine(tail...);
 	}
 	
+	template<class R, class T>
+	R foldl(R(*proc)(R, T), R first, T second)
+	{
+		return proc(first, second);
+	}
+	template<class R, class T, class... Ts>
+	R foldl(R(*proc)(R, T), R first, T second, Ts ... args)
+	{
+		return foldl(proc, proc(first, second), args...);
+	}
 	
 	// check if a mask nothing (always true)
 	template<class ... Ts>
