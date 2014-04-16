@@ -30,12 +30,7 @@ namespace ecs{
 		return foldl(proc, proc(first, second), args...);
 	}
 	
-	// check if a mask nothing (always true)
-	template<class ... Ts>
-	bool accepts(mask_t mask)
-	{
-		return true;
-	}
+
 	// checks if a mask satifies constant mask
 	template<mask_t sub>
 	bool accepts(mask_t mask)

@@ -11,14 +11,10 @@ namespace mapping{
 // it's like a linked list
 namespace list{
 	template <class...Ts>
-	class List{
+	struct List{
 		static constexpr unsigned length = 0;
 	};
-	template <class T>
-	struct List<T>{
-		T head;
-		static constexpr unsigned length = 1;
-	};
+
 	template <class T, class ... Ts>
 	struct List<T, Ts...>{
 		T head;
@@ -26,19 +22,15 @@ namespace list{
 		static constexpr unsigned length = decltype(tail)::length + 1;
 	};
 
-	template<class T>
-	T& find(List<T> & list)
+
+	// return a ref to the first item with type T
+	template<class T, class ... Ts>
+	T& find(List<T, Ts...> & list)
 	{
 		return list.head;
 	}
-	template<class T, class U, class ... Ts>
-	T& find(List<T, U, Ts...> & list)
-	{
-		return list.head;
-	}
-	
-	template<class T, class U, class ... Ts>
-	T& find(List<U, Ts...> & list)
+	template<class T, class ... Ts>
+	T& find(List<Ts...> & list)
 	{
 		return find<T>(list.tail);
 	}
@@ -46,7 +38,7 @@ namespace list{
 
 #include <vector>
 namespace ecs2{
-	enum class Component{
+	enum struct Component : unsigned{
 		POSITION,
 		VELOCITY,
 		ACCELERATION,
@@ -69,7 +61,7 @@ namespace ecs2{
 	struct getDeclType<i, list::List<T, Ts...>> : getDeclType<i, list::List<Ts...>>{};
 	
 
-	
+	// get reference to item mapped to a component
 	template<Component i, class...Ts>
 	auto ref(list::List<Ts...> & list) -> typename getDeclType<i, list::List<Ts...>>::ValueType&
 	{
@@ -81,20 +73,18 @@ namespace ecs2{
 
 	
 	// apply reserve to all vectors in the decl list
-	template<Component cpn, class T>
-	void emplace_back(list::List< Decl< cpn, std::vector<T> > > & list)
+	void emplace_back(list::List< > & l)
 	{
-		list.head.val.emplace_back();
+		static_assert(l.length == 0, "list length should be zero");
 	}
 	template<Component cpn, class T, class... Ts>
-	void emplace_back(list::List< Decl< cpn, std::vector<T> >, Ts...> & list)
+	void emplace_back(list::List< Decl< cpn, std::vector<T> >, Ts...> & l)
 	{
-		list.head.val.emplace_back();
-		emplace_back(list.tail);
+		l.head.val.emplace_back();
+		emplace_back(l.tail);
 	}
 	class World{
 	private:
-		unsigned size;
 		std::stack<unsigned> holes;
 	public:
 		std::vector<uint16_t> masks;
@@ -108,8 +98,9 @@ namespace ecs2{
 			unsigned next;
 			if(holes.empty())
 			{
-				next = size++;
-				emplace_back(cpn); // advance one slot for all vectors
+				next = masks.size();
+				masks.push_back(0); // advance one slot for mask vector
+				emplace_back(cpn); // advance one slot for all component vectors
 			}
 			else
 			{
@@ -117,6 +108,12 @@ namespace ecs2{
 				holes.pop();
 			}
 			return next;
+		}
+		void addComponent(unsigned i, Component c)
+		{
+			unsigned old = masks.at(i);
+			uint16_t m = 1 << (unsigned)c;
+			masks.at(i) = old | m;
 		}
 	};
 	
