@@ -122,23 +122,23 @@ void loadKeys(void)
 	
 	auto obj = fr.getString("faster");
 	if(obj != nullptr)
-		strToKeycode(*(obj->datum.string), keys::faster);
+		strToKeycode(obj->datum, keys::faster);
 	
 	obj = fr.getString("slower");
 	if(obj != nullptr)
-		strToKeycode(*(obj->datum.string), keys::slower);
+		strToKeycode(obj->datum, keys::slower);
 	
 	obj = fr.getString("left");
 	if(obj != nullptr)
-		strToKeycode(*(obj->datum.string), keys::left);
+		strToKeycode(obj->datum, keys::left);
 	
 	obj = fr.getString("right");
 	if(obj != nullptr)
-		strToKeycode(*(obj->datum.string), keys::right);
+		strToKeycode(obj->datum, keys::right);
 	
 	obj = fr.getString("fire");
 	if(obj != nullptr)
-		strToKeycode(*(obj->datum.string), keys::fire);
+		strToKeycode(obj->datum, keys::fire);
 }
 void handle_event(void)
 {

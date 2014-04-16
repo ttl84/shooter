@@ -28,7 +28,7 @@ private:
 	DECL_VISIT(visitError)
 	#undef DECL_VISIT
 public:
-	
+	virtual ~ASTVisitor(){}
 	void visit(std::unique_ptr<AST> & tree)
 	{
 		switch(tree->type){

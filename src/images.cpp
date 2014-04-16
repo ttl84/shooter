@@ -9,28 +9,28 @@ static std::string makeImagePath(std::string name)
 	return dir + name + extension;
 }
 static std::tuple<uint8_t, Pixel, bool>
-interpretColourTuple(std::shared_ptr<Object> src)
+interpretColourTuple(Object * src)
 {
-	if(src->type == Object::Type::LIST)
+	if(src->getType() == Object::Type::LIST)
 	{
-		auto colourTuple = src->datum.list;
-		if(colourTuple->size() == 4)
+		auto & colourTuple = downcast<ListObject>(src)->datum;
+		if(colourTuple.size() == 4)
 		{
-			auto symbolObject = colourTuple->at(0);
-			auto redObject = colourTuple->at(1);
-			auto greenObject = colourTuple->at(2);
-			auto blueObject = colourTuple->at(3);
+			StringObject * symbolObject = downcast<StringObject>(colourTuple.at(0));
+			IntegerObject * redObject = downcast<IntegerObject>(colourTuple.at(1));
+			IntegerObject * greenObject = downcast<IntegerObject>(colourTuple.at(2));
+			IntegerObject * blueObject = downcast<IntegerObject>(colourTuple.at(3));
 			
-			if(symbolObject->type == Object::Type::STRING and symbolObject->datum.string->length() == 1 and
-				redObject->type == Object::Type::INTEGER and
-				greenObject->type == Object::Type::INTEGER and
-				blueObject->type == Object::Type::INTEGER)
+			if(symbolObject != nullptr and symbolObject->datum.length() == 1 and
+				redObject != nullptr and
+				greenObject != nullptr and
+				blueObject != nullptr)
 			{
-				uint8_t symbol = (*(symbolObject->datum.string))[0];
+				uint8_t symbol = symbolObject->datum[0];
 				Pixel colour;
-				colour.r = redObject->datum.integer;
-				colour.g = greenObject->datum.integer;
-				colour.b = blueObject->datum.integer;
+				colour.r = redObject->datum;
+				colour.g = greenObject->datum;
+				colour.b = blueObject->datum;
 				colour.a = 255;
 				return std::make_tuple(symbol, colour, true);
 			}
@@ -39,26 +39,23 @@ interpretColourTuple(std::shared_ptr<Object> src)
 	}
 	return std::make_tuple(0, Pixel{0}, false);
 }
-static std::tuple<Palette, bool> interpretPalette(std::shared_ptr<Object> src)
+static std::tuple<Palette, bool> interpretPalette(ListObject * src)
 {
 	Palette dst;
-	if(src->type == Object::Type::LIST)
+
+	auto & colourObjectList = src->datum;
+	for(auto & colourObject : colourObjectList)
 	{
-		auto colourObjectList = src->datum.list;
-		for(auto colourObject : *colourObjectList)
+		uint8_t symbol;
+		Pixel pixel;
+		bool good;
+		std::tie(symbol, pixel, good) = interpretColourTuple(colourObject);
+		if(good)
 		{
-			uint8_t symbol;
-			Pixel pixel;
-			bool good;
-			std::tie(symbol, pixel, good) = interpretColourTuple(colourObject);
-			if(good)
-			{
-				dst[symbol]= pixel;
-			}
+			dst[symbol]= pixel;
 		}
-		return std::make_tuple(dst, true);
 	}
-	return std::make_tuple(dst, false);
+	return std::make_tuple(dst, true);
 }
 static Pixel genColourkey(Palette & pal)
 {
@@ -96,14 +93,14 @@ std::tuple<Image, bool> loadImage(std::string name)
 	FileReader reader(fileStream);
 	
 
-	auto bytesObject = reader.getString("bytes");
+	StringObject * bytesObject = reader.getString("bytes");
 	if(bytesObject == nullptr)
 	{
 		debug::err << "image file [" << path << "is missing object [bytes]\n";
 		return std::make_tuple(Image(), false);
 	}
 	
-	auto paletteObject = reader.getList("palette");
+	ListObject * paletteObject = reader.getList("palette");
 	if(paletteObject == nullptr)
 	{
 		debug::err << "image file [" << path << "is missing object [palette]\n";
@@ -111,7 +108,7 @@ std::tuple<Image, bool> loadImage(std::string name)
 	}
 	
 	
-	CharImg bytes(*(bytesObject->datum.string));
+	CharImg bytes(bytesObject->datum);
 	
 	Palette palette;
 	bool goodPalette;

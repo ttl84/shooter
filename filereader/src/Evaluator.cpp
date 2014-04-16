@@ -17,36 +17,41 @@ void Evaluator::visitError(std::unique_ptr<AST> & tree)
 }
 void Evaluator::visitBoolean(std::unique_ptr<AST> & tree)
 {
-	auto obj = Object::makeBoolean();
-	obj->datum.boolean = tree->start.datum.boolean;
+	auto obj = new BooleanObject;
+	pool.emplace_back(obj);
+	obj->datum = tree->start.datum.boolean;
 	objectTable[tree.get()] = obj;
 }
 void Evaluator::visitInteger(std::unique_ptr<AST> & tree)
 {
-	auto obj = Object::makeInteger();
-	obj->datum.integer = tree->start.datum.integer;
+	auto obj = new IntegerObject;
+	pool.emplace_back(obj);
+	obj->datum = tree->start.datum.integer;
 	objectTable[tree.get()] = obj;
 }
 void Evaluator::visitReal(std::unique_ptr<AST> & tree)
 {
-	auto obj = Object::makeReal();
-	obj->datum.real = tree->start.datum.real;
+	auto obj = new RealObject;
+	pool.emplace_back(obj);
+	obj->datum = tree->start.datum.real;
 	objectTable[tree.get()] = obj;
 }
 void Evaluator::visitString(std::unique_ptr<AST> & tree)
 {
-	auto obj = Object::makeString();
-	*(obj->datum.string) = tree->start.lexeme;
+	auto obj = new StringObject;
+	pool.emplace_back(obj);
+	obj->datum = tree->start.lexeme;
 	objectTable[tree.get()] = obj;
 }
 void Evaluator::visitList(std::unique_ptr<AST> & tree)
 {
-	auto obj = Object::makeList();
+	auto obj = new ListObject;
+	pool.emplace_back(obj);
 	for(auto & child : *tree)
 	{
 		visit(child);
 		auto childObj = getAndRemove(objectTable, child.get());
-		obj->datum.list->push_back(childObj);
+		obj->datum.push_back(childObj);
 	}
 	objectTable[tree.get()] = obj;
 }

@@ -11,9 +11,9 @@ FileReader::FileReader(std::istream & is)
 	TokenStream ts(cs);
 	std::unique_ptr<AST> tree(parse(ts));
 	SemanticAnalyzer().visit(tree);
-	Evaluator(data).visit(tree);
+	Evaluator(data, pool).visit(tree);
 }
-std::shared_ptr<Object> FileReader::get(std::string key)
+Object * FileReader::get(std::string key)
 {
 	auto ref = data.find(key);
 	if(ref == data.end())
@@ -21,32 +21,23 @@ std::shared_ptr<Object> FileReader::get(std::string key)
 	else
 		return ref->second;
 }
-std::shared_ptr<Object> FileReader::getForType(std::string key, Object::Type type)
+StringObject * FileReader::getString(std::string key)
 {
-	auto obj = get(key);
-	if(obj == nullptr or obj->type != type)
-		return nullptr;
-	else
-		return obj;
+	return downcast<StringObject>(get(key));
 }
-std::shared_ptr<Object> FileReader::getString(std::string key)
+IntegerObject * FileReader::getInteger(std::string key)
 {
-	return getForType(key, Object::Type::STRING);
+	return downcast<IntegerObject>(get(key));
 }
-
-std::shared_ptr<Object> FileReader::getInteger(std::string key)
+RealObject * FileReader::getReal(std::string key)
 {
-	return getForType(key, Object::Type::INTEGER);
+	return downcast<RealObject>(get(key));
 }
-std::shared_ptr<Object> FileReader::getReal(std::string key)
+BooleanObject * FileReader::getBoolean(std::string key)
 {
-	return getForType(key, Object::Type::REAL);
+	return downcast<BooleanObject>(get(key));
 }
-std::shared_ptr<Object> FileReader::getBoolean(std::string key)
+ListObject * FileReader::getList(std::string key)
 {
-	return getForType(key, Object::Type::BOOLEAN);
-}
-std::shared_ptr<Object> FileReader::getList(std::string key)
-{
-	return getForType(key, Object::Type::LIST);
+	return downcast<ListObject>(get(key));
 }

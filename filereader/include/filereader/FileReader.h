@@ -2,22 +2,23 @@
 #define FileReader_H
 #include <memory>
 #include <map>
+#include <set>
 #include <string>
 #include <istream>
 
 #include "Object.h"
 class FileReader{
 private:
-	std::map<std::string, std::shared_ptr<Object>> data;
-	std::shared_ptr<Object> get(std::string key);
-	std::shared_ptr<Object> getForType(std::string key, Object::Type type);
+	std::map<std::string, Object *> data;
+	std::vector<std::unique_ptr<Object>> pool;
+	Object * get(std::string key);
 public:
 	FileReader(std::istream & is);
 	
-	std::shared_ptr<Object> getString(std::string key);
-	std::shared_ptr<Object> getInteger(std::string key);
-	std::shared_ptr<Object> getReal(std::string key);
-	std::shared_ptr<Object> getBoolean(std::string key);
-	std::shared_ptr<Object> getList(std::string key);
+	StringObject * getString(std::string key);
+	IntegerObject * getInteger(std::string key);
+	RealObject * getReal(std::string key);
+	BooleanObject * getBoolean(std::string key);
+	ListObject * getList(std::string key);
 };
 #endif
