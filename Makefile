@@ -8,12 +8,12 @@ else
 	RM = rm
 	BIN = a.out
 endif
-INCLUDE_DIR := -I"include" -I"filereader/include" -I"filereader/include/filereader" -I"../SDL2/include"
-LDFLAGS+=-L"../SDL2/lib" -lSDL2main -lSDL2
-CFLAGS+=-std=c++11 -pedantic-errors -Wstrict-aliasing=0 -Wall -g -DDEBUG $(INCLUDE_DIR)
+INCLUDE_FLAGS := -I"include" -I"../filereader/include" -I"../SDL2/include"
+LDFLAGS+=-L"../SDL2/lib" -lSDL2main -lSDL2 -L"../filereader/lib" -lfilereader
+CFLAGS+=-std=c++11 -pedantic-errors -Wstrict-aliasing=0 -Wall -g -DDEBUG $(INCLUDE_FLAGS)
 
 #file names and directories
-DIR=src filereader/src
+DIR=src
 SRC=$(wildcard $(DIR:%=%/*.cpp))
 OBJ=$(SRC:.cpp=.o)
 DEP=$(SRC:.cpp=.d)
