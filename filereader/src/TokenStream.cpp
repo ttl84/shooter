@@ -43,7 +43,12 @@ bool beginsNumber(Char const & ch)
 }
 bool beginsOperator(Char const & ch)
 {
-	return ch == ':' or ch == '[' or ch == ']' or ch == ',';
+	return (not isEnd(ch)) and
+		(ch == ':' or ch == '[' or ch == ']' or ch == ',');
+}
+bool beginsComment(Char ch)
+{
+	return (not isEnd(ch)) and ch == ';';
 }
 bool inNumber(Char const & ch)
 {
@@ -288,6 +293,15 @@ Token  maybeKeyword(Token token)
 	}
 	return token;
 }
+Token readComment(CharStream & cs)
+{
+	Char first = cs.get();
+	Token tok(Token::Type::COMMENT, first);
+	tok.lexeme += first;
+	while(not (isEnd(cs.peek()) or cs.peek() == '\n'))
+		tok.lexeme += cs.get();
+	return tok;
+}
 void skipWhitespace(CharStream & cs)
 {
 	while(isWhitespace(cs.peek()))
@@ -301,7 +315,12 @@ Token readToken(CharStream & cs)
 	Char next = cs.peek();
 	if(isEnd(next))
 		return Token(Token::Type::END);
-
+	else if(beginsComment(next))
+	{
+		readComment(cs);
+		return readToken(cs);
+	}
+	
 	else if(beginsOperator(next))
 		return readOperator(cs);
 	

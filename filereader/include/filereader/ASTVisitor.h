@@ -1,20 +1,14 @@
 #ifndef ASTVisitor_h
 #define ASTVisitor_h
 #include "AST.h"
-
+#include <iostream>
 class ASTVisitor{
-public:
-	typedef void visit_t(std::unique_ptr<AST> & tree);
 private:
-	void defaultVisit(std::unique_ptr<AST> & tree)
-	{
-		for(auto & child : *tree)
-			visit(child);
-	}
 	#define DECL_VISIT(name)\
 	virtual void name (std::unique_ptr<AST> & tree)\
 	{\
-		defaultVisit(tree);\
+		for(auto & child : *tree)\
+			visit(child);\
 	}
 	
 	DECL_VISIT(visitTop)
@@ -27,6 +21,16 @@ private:
 	DECL_VISIT(visitList)
 	DECL_VISIT(visitError)
 	#undef DECL_VISIT
+	
+	// return a string that describes the visitor
+	virtual std::string getName() const = 0;
+protected:
+	std::ostream & logError(std::unique_ptr<AST> & tree) const
+	{
+		return std::cerr <<
+			getName() <<
+			" (" << tree->start.row << ", " << tree->start.col << "): ";
+	}
 public:
 	virtual ~ASTVisitor(){}
 	void visit(std::unique_ptr<AST> & tree)

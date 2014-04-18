@@ -3,7 +3,7 @@
 #include <vector>
 #include <memory>
 #include "Token.h"
-struct AST{
+struct AST final{
 	enum class Type{
 		TOP, ASSIGNMENT, 
 		IDENTIFIER, REAL, INTEGER, BOOLEAN, STRING, 

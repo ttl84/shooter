@@ -1,3 +1,4 @@
+; control mapping for keyboard
 faster :="up"
 slower:= "down"
 left := "left"

@@ -1,9 +1,6 @@
 #include "Evaluator.h"
 #include <iostream>
-static std::ostream & logError(std::unique_ptr<AST> & tree)
-{
-	return std::cerr << "evaluator (" << tree->start.row << ", " << tree->start.col << "): ";
-}
+
 template<typename key_t, typename val_t>
 static val_t getAndRemove(std::map<key_t, val_t> & map, key_t key)
 {

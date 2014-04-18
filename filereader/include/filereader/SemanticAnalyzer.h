@@ -4,15 +4,15 @@
 #include <string>
 
 #include "ASTVisitor.h"
-class SemanticAnalyzer : public ASTVisitor{
+class SemanticAnalyzer final: public ASTVisitor{
 	std::set<std::string> symbolTable;
-	bool badFlag;
-	void semanticError(void);
 	
-	typedef ASTVisitor::visit_t visit_t;
-	
-	visit_t visitIdentifier, visitError;
-	
+	void visitIdentifier	(std::unique_ptr<AST> &) override;
+	void visitError		(std::unique_ptr<AST> &) override;
+	std::string getName() const override
+	{
+		return "semantic analyzer";
+	}
 public:
 	bool bad(void);
 };
