@@ -42,16 +42,16 @@ void Entity::moveSystem(float dt)
 void Entity::collisionSystem(void)
 {
 	// first construct collision shape for entities that can collide
-	struct Object{
+	struct Body{
 		entity_t id;
 		Circ shape;
 	};
-	std::vector<Object> players;
-	std::vector<Object> enemies;
+	std::vector<Body> players;
+	std::vector<Body> enemies;
 	for(auto i : select(collision_effect_mask))
 	{
 
-		Object obj;
+		Body obj;
 		obj.id = i;
 		obj.shape = Circ(position[i], size[i].w / 2.5);
 		if(faction[i] == Faction::PLAYER)
@@ -61,11 +61,11 @@ void Entity::collisionSystem(void)
 	}
 	
 	// test the two groups against each other
-	for(Object & i : players)
+	for(Body & i : players)
 	{
-		for(Object & j : enemies)
+		for(Body & j : enemies)
 		{
-			if(i.shape.intersects(j.shape))
+			if(Circ::intersect(i.shape, j.shape))
 			{
 				collision_effect[i.id](j.id);
 				collision_effect[j.id](i.id);
