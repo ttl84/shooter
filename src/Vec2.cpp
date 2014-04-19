@@ -62,7 +62,7 @@ Vec2 operator/(Vec2 const & a, float k)
 
 Vec2 operator/(float k, Vec2 const & a)
 {
-	return Vec2(a.x / k, a.y / k);
+	return Vec2(k / a.x,  k / a.y);
 }
 
 void operator /=(Vec2 & a, float k)
