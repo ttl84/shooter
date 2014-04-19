@@ -1,11 +1,15 @@
 #include "Entity.h"
 #include <iostream>
 namespace ecs{
-Entity::Entity(void) : mask{0}, myCount{0}
+Entity::Entity(void) : myCount(0), mask{0}
 {
 	
 }
-entity_t Entity::claim(void)
+void Entity::scheduleCreationJob(std::function<void(Entity&, unsigned)> initFunc)
+{
+	creationQueue.push(initFunc);
+}
+entity_t Entity::claim()
 {
 	entity_t next;
 	if(myHoles.empty())
@@ -30,6 +34,16 @@ entity_t Entity::claim(void)
 	timer_function[next] = [](entity_t self){std::cerr << "missing timer function\n";};
 	return next;
 }
+void Entity::executeCreationJobs()
+{
+	while(not creationQueue.empty())
+	{
+		auto func = creationQueue.front();
+		creationQueue.pop();
+		unsigned id = claim();
+		func(*this, id);
+	}
+}
 void Entity::remove(entity_t i)
 {
 	mask[i] = 0;
@@ -44,3 +58,4 @@ unsigned Entity::capacity(void) const
 	return MAX_ENTITIES;
 }
 }
+#include "ecs3.h"

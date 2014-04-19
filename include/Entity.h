@@ -2,14 +2,20 @@
 #define ENTITY_H
 #include "components.h"
 #include "masks.h"
-#include <stack>
 #include "Rect.h"
+#include <stack>
+#include <queue>
 
 namespace ecs{
 	typedef unsigned entity_t;
 	
 	constexpr unsigned MAX_ENTITIES = 1000;
-	struct Entity{
+	class Entity{
+	private:
+		unsigned myCount;
+		std::stack< unsigned > myHoles;
+		std::queue< std::function<void(Entity&, unsigned)> > creationQueue;
+	public:
 		mask_t mask[MAX_ENTITIES];
 		Vec2 position[MAX_ENTITIES];
 		Vec2 velocity[MAX_ENTITIES];
@@ -30,14 +36,21 @@ namespace ecs{
 		std::function<void(entity_t)> timer_function[MAX_ENTITIES];
 		std::function<void(entity_t)> collision_effect[MAX_ENTITIES];
 		
-		// important methods
+		// constructors
 		Entity(void);
 		Entity(Entity const &) = delete;
 		Entity const & operator=(Entity const &) = delete;
-		entity_t claim(void);
+		
+		// modifiers
+		void scheduleCreationJob(std::function<void(Entity&, unsigned)> initFunc);
+		void executeCreationJobs();
+	private:
+		entity_t claim();
+	public:
+		
 		void remove(entity_t i);
-		unsigned count(void) const;
-		unsigned capacity(void) const;
+		unsigned count() const;
+		unsigned capacity() const;
 		
 		
 		// systems
@@ -102,9 +115,7 @@ namespace ecs{
 			return View{*this, combine(args...)};
 		}
 		
-	private:
-		unsigned myCount;
-		std::stack<entity_t> myHoles;
+	
 	};
 	
 	
