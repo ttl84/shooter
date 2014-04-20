@@ -4,7 +4,6 @@
 #include "font.h"
 #include "images.h"
 #include "systems.h"
-#include "spawner.h"
 #include <ctime>
 #include <sstream>
 
@@ -145,6 +144,7 @@ void GameState::stateReset()
 	// the player's state
 	dead = false;
 
+	entities.reset();
 	entities.scheduleCreationJob(spawnPlayerFunc(entities, *this));
 	entities.executeCreationJobs();
 }

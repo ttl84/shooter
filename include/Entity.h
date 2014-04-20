@@ -40,6 +40,8 @@ namespace ecs{
 		Entity(void);
 		Entity(Entity const &) = delete;
 		Entity const & operator=(Entity const &) = delete;
+
+		void reset();
 		
 		// modifiers
 		void scheduleCreationJob(std::function<void(Entity&, unsigned)> initFunc);

@@ -1,9 +1,17 @@
 #include "Entity.h"
 #include <iostream>
 namespace ecs{
-Entity::Entity(void) : myCount(0), mask{0}
+Entity::Entity(void)
 {
-	
+	reset();
+}
+void Entity::reset()
+{
+	myCount = 0;
+	myHoles = decltype(myHoles)();
+	creationQueue = decltype(creationQueue)();
+	for(auto & m : mask)
+		m = 0;
 }
 void Entity::scheduleCreationJob(std::function<void(Entity&, unsigned)> initFunc)
 {
