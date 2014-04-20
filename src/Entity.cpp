@@ -16,8 +16,7 @@ entity_t Entity::claim()
 	{
 		if(myCount == MAX_ENTITIES)
 		{
-			std::cerr << "out of slots for new entity, aborting\n";
-			abort();
+			next = MAX_ENTITIES - 1;
 		}
 		else
 			next = myCount++;

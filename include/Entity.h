@@ -9,7 +9,7 @@
 namespace ecs{
 	typedef unsigned entity_t;
 	
-	constexpr unsigned MAX_ENTITIES = 1000;
+	constexpr unsigned MAX_ENTITIES = 256;
 	class Entity{
 	private:
 		unsigned myCount;
