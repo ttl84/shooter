@@ -46,7 +46,7 @@ GameState::GameState(std::string title, unsigned width, unsigned height):
 		enemySpawnPRG = std::mt19937(seed);
 	}
 	
-	stateReset();
+	reset();
 }
 GameState::~GameState()
 {
@@ -57,6 +57,27 @@ GameState::~GameState()
 	
 	SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER);
 	SDL_Quit();
+}
+void GameState::reset()
+{
+	// camera and existence boundary
+	camera = Rect(0, 0, windowWidth, windowHeight);
+	bounds.w = camera.w;
+	bounds.h = camera.h * 2.0;
+	bounds.setCenter(camera.getCenter());
+	
+	// progress tracking
+	currentY = previousY = 0;
+	
+	// score keeping
+	score = 0;
+
+	// the player's state
+	dead = false;
+
+	entities.reset();
+	entities.scheduleCreationJob(spawnPlayerFunc(entities, *this));
+	entities.executeCreationJobs();
 }
 SDL_Texture* GameState::loadTexture(std::string filename)
 {
@@ -127,27 +148,7 @@ decltype(GameState::score) GameState::getScore() const
 {
 	return score;
 }
-void GameState::stateReset()
-{
-	// camera and existence boundary
-	camera = Rect(0, 0, windowWidth, windowHeight);
-	bounds.w = camera.w;
-	bounds.h = camera.h * 2.0;
-	bounds.setCenter(camera.getCenter());
-	
-	// progress tracking
-	currentY = previousY = 0;
-	
-	// score keeping
-	score = 0;
 
-	// the player's state
-	dead = false;
-
-	entities.reset();
-	entities.scheduleCreationJob(spawnPlayerFunc(entities, *this));
-	entities.executeCreationJobs();
-}
 void drawText(GameState & state, std::string str, int x, int y)
 {
 	SDL_Rect dstrect;
@@ -172,15 +173,20 @@ std::tuple<unsigned, unsigned> textCenter(std::string str, Font const & font)
 void GameState::drawUI()
 {
 	std::stringstream oss;
-	oss << score;
+	oss << "score " << score;
 	drawText(*this, oss.str(), 0, 0);
 	
 	if(dead)
 	{
 		std::string deadText("game over");
+		std::string retryText("press any key");
 		unsigned x, y;
+
 		std::tie(x, y) = textCenter(deadText, font);
 		drawText(*this, deadText, windowWidth / 2 - x, windowHeight / 2 - y);
+
+		std::tie(x, y) = textCenter(retryText, font);
+		drawText(*this, retryText, windowWidth / 2 - x, windowHeight / 2 + font.getHeight() + 2 - y);
 	}
 }
 
@@ -549,6 +555,25 @@ void update_bounds(ecs::Entity & entities, GameState & state)
 	}
 			
 }
+void trap_player(ecs::Entity & entities, GameState & state)
+{
+	for(ecs::entity_t i = 0; i < entities.count(); i++)
+	{
+		if(ecs::accepts<Component::CAMERA_FOCUS>(entities.mask[i]))
+		{
+			float centerX = entities.position[i].x;
+			float low = state.bounds.getLeft();
+			float high = state.bounds.getRight();
+			if(centerX <= low)
+				centerX = low + 1;
+			else if(centerX >= high)
+				centerX = high - 1;
+			entities.position[i].x = centerX;
+			return;
+		}
+	}
+			
+}
 void despawn_entities(ecs::Entity & entities, GameState & state)
 {
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
@@ -565,6 +590,11 @@ void despawn_entities(ecs::Entity & entities, GameState & state)
 
 void GameState::update(float const dt)
 {
+	if(dead)
+	{
+		if(control::any)
+			reset();
+	}
 	thinkSystem(entities);
 	shootSystem(entities, dt);
 	
@@ -577,6 +607,7 @@ void GameState::update(float const dt)
 	
 	update_camera(entities, *this);
 	update_bounds(entities, *this);
+	trap_player(entities, *this);
 	
 	spawn_enemies(entities, *this);
 	despawn_entities(entities, *this);

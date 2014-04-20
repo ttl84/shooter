@@ -61,9 +61,9 @@ public:
 	void enemyHit();
 	void playerDie();
 
-	void stateReset();
 	
 	
+	void reset();
 	
 	GameState(std::string title, unsigned width, unsigned height);
 	~GameState();

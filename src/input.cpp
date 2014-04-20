@@ -10,6 +10,7 @@ namespace control{
 	bool right = false;
 	bool fire = false;
 	bool quit = false;
+	bool any = false;
 }
 namespace keys{ //key bindings, can be changed
 	SDL_Keycode
@@ -142,11 +143,13 @@ void loadKeys(void)
 }
 void handle_event(void)
 {
+	control::any = false;
 	SDL_Event e;
 	while(SDL_PollEvent(&e))
 	{
 		if(e.type == SDL_KEYDOWN)
 		{
+			control::any = true;
 			SDL_Keycode symbol = e.key.keysym.sym;
 			if(symbol == keys::faster)
 				control::faster = true;
@@ -160,7 +163,6 @@ void handle_event(void)
 				control::fire = true;
 			else if(symbol == SDLK_ESCAPE)
 				control::quit = true;
-				
 		}
 		else if(e.type == SDL_KEYUP)
 		{

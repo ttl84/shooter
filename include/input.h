@@ -8,6 +8,7 @@ namespace control{
 	extern bool right;
 	extern bool fire;
 	extern bool quit;
+	extern bool any;
 }
 void loadKeys(void);
 void handle_event(void);

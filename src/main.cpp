@@ -17,7 +17,7 @@ int main(int argc, char ** argv)
 	while(not control::quit)
 	{
 		frame_begin = frame_end;
-		
+		SDL_Delay(1);
 		handle_event();
 		if(dt > MAX_DT)
 			dt = MAX_DT;

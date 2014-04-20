@@ -13,7 +13,6 @@ INCLUDE_FLAGS := -I"include" \
 	-I"../SDL2/include"
 
 LDFLAGS+=-L"../SDL2/lib" -lSDL2main -lSDL2 \
-	-L"../SDL2_ttf/lib" -lSDL2_ttf \
 	-L"../filereader/lib" -lfilereader
 CFLAGS+=-std=c++11 -pedantic-errors -Wstrict-aliasing=0 -Wall -g -DDEBUG $(INCLUDE_FLAGS)
 
