@@ -4,6 +4,8 @@
 #include "Rect.h"
 #include "Vec2.h"
 #include "Font.h"
+#include "Entity.h"
+#include <deque>
 #include <string>
 #include <random>
 #include <unordered_map>
@@ -14,6 +16,10 @@ private:
 	float timeElapsed;
 	uint64_t score;
 	bool dead;
+
+	ecs::Entity entities;
+
+	std::deque<Vec2> stars;
 
 	std::mt19937 PRG, starPRG, enemySpawnPRG;
 
@@ -76,19 +82,31 @@ public:
 	{
 		return window;
 	}
-	void drawUI();
 	float randFloat(float low, float high)
 	{
 		return std::uniform_real_distribution<float>(low, high)(PRG);
-	}
-	float randStarSpawn(float low, float high)
-	{
-		return std::uniform_real_distribution<float>(low, high)(starPRG);
 	}
 	float randEnemySpawn()
 	{
 		return std::generate_canonical<float, 32>(enemySpawnPRG);
 	}
+
+	void drawUI();
+	void updateStars();
+	void drawStars();
+	void update(float dt);
+	void draw();
 	
 };
+std::function<void(ecs::Entity &, unsigned)> 
+spawnPlayerFunc(ecs::Entity & entities, GameState & state);
+
+std::function<void(ecs::Entity &, unsigned)> 
+spawnEnemyFunc1(ecs::Entity & entities, GameState & state);
+
+std::function<void(ecs::Entity &, unsigned)> 
+spawnEnemyFunc2(ecs::Entity & entities, GameState & state);
+
+Gun player_gun(ecs::Entity & entities, GameState & state);
+Gun basic_gun(ecs::Entity & entities, GameState & state);
 #endif
