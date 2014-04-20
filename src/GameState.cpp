@@ -1,17 +1,16 @@
 #include "GameState.h"
 #include "debug.h"
 #include "input.h"
+#include "font.h"
 #include "images.h"
-
+#include <ctime>
+#include <sstream>
 GameState::GameState(std::string title, unsigned width, unsigned height):
 	windowTitle(title),
 	windowWidth(width),
 	windowHeight(height)
 {
-	currentY = previousY = 0;
-	std::random_device rd;
-	auto seed = rd();
-	randomGenerator = std::mt19937(seed);
+	
 
 	// sdl systems
 	SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER);
@@ -23,11 +22,29 @@ GameState::GameState(std::string title, unsigned width, unsigned height):
 	// input
 	loadKeys();
 	
-	// game logic
-	camera = Rect(0, 0, windowWidth, windowHeight);
-	bounds.w = camera.w;
-	bounds.h = camera.h * 2.0;
-	bounds.setCenter(camera.getCenter());
+	//font
+	{
+		bool good;
+		std::tie(font, good) = loadFont("font.txt");
+		for(auto pair : font)
+		{
+			this->fontTextureMap.emplace(pair.first, pair.second.makeTexture(renderer));
+		}
+	}
+	
+	// randomness
+	{
+		uint64_t seed;
+		auto currentTime = time(nullptr);
+		memcpy(&seed, &currentTime, std::min(sizeof currentTime, sizeof seed));
+		seed ^= std::clock();
+
+		PRG = std::mt19937(seed);
+		starPRG = std::mt19937(seed);
+		enemySpawnPRG = std::mt19937(seed);
+	}
+	
+	stateReset();
 }
 GameState::~GameState()
 {
@@ -58,6 +75,18 @@ SDL_Texture* GameState::loadTexture(std::string filename)
 	}
 	return textureMap[filename];
 }
+SDL_Texture* GameState::loadFontTexture(char c)
+{
+	auto it = fontTextureMap.find(c);
+	if(it == fontTextureMap.end())
+		return nullptr;
+	else
+		return it->second;
+}
+Font const & GameState::getFont()
+{
+	return font;
+}
 void GameState::centerCamera(Vec2 center)
 {
 	camera.setCenter(center);
@@ -78,4 +107,73 @@ float GameState :: getDistanceTravelled(void) const
 float GameState :: getTotalDistance(void) const
 {
 	return -currentY;
+}
+
+void GameState:: enemyKill()
+{
+	score+= 3;
+}
+void GameState::enemyHit()
+{
+	score ++;
+}
+void GameState::playerDie()
+{
+	dead = true;
+}
+decltype(GameState::score) GameState::getScore() const
+{
+	return score;
+}
+void GameState::stateReset()
+{
+	// camera and existence boundary
+	camera = Rect(0, 0, windowWidth, windowHeight);
+	bounds.w = camera.w;
+	bounds.h = camera.h * 2.0;
+	bounds.setCenter(camera.getCenter());
+	
+	// progress tracking
+	currentY = previousY = 0;
+	
+	// score keeping
+	score = 0;
+
+	// the player's state
+	dead = false;
+}
+void drawText(GameState & state, std::string str, int x, int y)
+{
+	SDL_Rect dstrect;
+	dstrect.x = x;
+	dstrect.y = y;
+	dstrect.w = state.getFont().getWidth();
+	dstrect.h = state.getFont().getHeight();
+	for(char c : str)
+	{
+		auto charTex = state.loadFontTexture(c);
+		if(charTex != nullptr)
+			SDL_RenderCopy(state.getRenderer(), charTex, nullptr, &dstrect);
+		dstrect.x += dstrect.w + 1;
+	}
+}
+std::tuple<unsigned, unsigned> textCenter(std::string str, Font const & font)
+{
+	unsigned x = str.length() * font.getWidth() / 2;
+	unsigned y = font.getHeight() / 2;
+	return std::make_tuple(x, y);
+}
+void GameState::drawUI()
+{
+	std::stringstream oss;
+	oss << score;
+	drawText(*this, oss.str(), 0, 0);
+	
+	if(dead)
+	{
+		std::string deadText("game over");
+		unsigned x, y;
+		std::tie(x, y) = textCenter(deadText, font);
+		drawText(*this, deadText, windowWidth / 2 - x, windowHeight / 2 - y);
+	}
 }

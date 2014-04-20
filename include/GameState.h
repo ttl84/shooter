@@ -3,20 +3,29 @@
 #include "SDL2/SDL.h"
 #include "Rect.h"
 #include "Vec2.h"
+#include "Font.h"
 #include <string>
 #include <random>
 #include <unordered_map>
 class GameState{
+private:
 	float currentY;
 	float previousY;
 	float timeElapsed;
+	uint64_t score;
+	bool dead;
+
+	std::mt19937 PRG, starPRG, enemySpawnPRG;
 
 	SDL_Renderer * renderer;
 	SDL_Window * window;
 	
+	Font font;
+	std::unordered_map<char, SDL_Texture*> fontTextureMap;
 	std::unordered_map<std::string, SDL_Texture*> textureMap;
 	
-	std::mt19937 randomGenerator;
+	
+	
 public:
 	std::string const windowTitle;
 	unsigned const windowWidth;
@@ -38,9 +47,16 @@ public:
 
 	// keeping track of progress
 	void updateCurrentY(float);
-	float getDistanceTravelled(void) const;
-	float getTotalDistance(void) const;
-			
+	float getDistanceTravelled() const;
+	float getTotalDistance() const;
+	decltype(score) getScore() const;
+
+	void enemyKill();
+	void enemyHit();
+	void playerDie();
+
+	void stateReset();
+	
 	
 	
 	GameState(std::string title, unsigned width, unsigned height);
@@ -49,6 +65,9 @@ public:
 	GameState & operator = (GameState const & other) = delete;
 
 	SDL_Texture * loadTexture(std::string name);
+	SDL_Texture * loadFontTexture(char c);
+	Font const & getFont();
+	
 	SDL_Renderer * getRenderer()
 	{
 		return renderer;
@@ -57,17 +76,18 @@ public:
 	{
 		return window;
 	}
-	std::mt19937 & getRandomGenerator()
-	{
-		return randomGenerator;
-	}
+	void drawUI();
 	float randFloat(float low, float high)
 	{
-		return std::uniform_real_distribution<float>(low, high)(randomGenerator);
+		return std::uniform_real_distribution<float>(low, high)(PRG);
 	}
-	float randRoll(void)
+	float randStarSpawn(float low, float high)
 	{
-		return std::generate_canonical<float, 20>(randomGenerator);
+		return std::uniform_real_distribution<float>(low, high)(starPRG);
+	}
+	float randEnemySpawn()
+	{
+		return std::generate_canonical<float, 32>(enemySpawnPRG);
 	}
 	
 };

@@ -52,18 +52,6 @@ namespace ecs{
 		unsigned count() const;
 		unsigned capacity() const;
 		
-		
-		// systems
-		void thinkSystem(void);
-		void shootSystem(float dt);
-		void accelSystem(float dt);
-		void moveSystem(float dt);
-		void collisionSystem(void);
-		void timerSystem(float dt);
-		void deathSystem(void);
-		void drawSystem(SDL_Renderer * renderer, Rect const & camera);
-		
-		
 		// iterator
 		
 		class iterator {

@@ -89,7 +89,10 @@ std::tuple<Image, bool> loadImage(std::string name)
 	std::string path = makeImagePath(name);
 	std::ifstream fileStream(path);
 	if(not fileStream)
+	{
 		debug::err << "unable to open file [" << path << "]\n";
+		return std::make_tuple(Image(), false);
+	}
 	FileReader reader(fileStream);
 	
 

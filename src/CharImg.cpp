@@ -27,16 +27,14 @@ std::string & extend(std::string & s, unsigned length, char c)
 	return s;
 }
 CharImg::CharImg(std::string const & s, char delimiter)
+:CharImg()
 {
 	std::vector<std::string> tokens = tokenize(s, delimiter);
-	myWidth = 0;
-	myHeight = 0;
 	for(std::string& t : tokens)
 	{
 		if(t.length() > myWidth)
 			myWidth = t.length();
 	}
-	myChars = "";
 	for(std::string& t : tokens)
 	{
 		myChars += extend(t, myWidth, ' ');

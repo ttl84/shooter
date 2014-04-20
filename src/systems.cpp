@@ -1,45 +1,47 @@
+#include "systems.h"
 #include "Entity.h"
+#include "components.h"
 #include "Circ.h"
 #include "Rect.h"
 #include "PI.h"
 #include <vector>
-namespace ecs{
-void Entity::thinkSystem(void)
+using namespace ecs;
+void thinkSystem(Entity & e)
 {
-	for(auto i : select(Component::THINK))
-		think_function[i](i);
+	for(auto i : e.select(Component::THINK))
+		e.think_function[i](i);
 }
 
-void Entity::shootSystem(float dt)
+void shootSystem(Entity & e, float dt)
 {
-	for(auto i : select(shooter_mask))
+	for(auto i : e.select(shooter_mask))
 	{
 		// guns have a wait_time to wait before they can fire again
-		if(gun[i].wait_time > 0)
-			gun[i].wait_time -= dt;
+		if(e.gun[i].wait_time > 0)
+			e.gun[i].wait_time -= dt;
 		
 		// spawn bullet if gun is ready
-		if(gun[i].fire and gun[i].wait_time <= 0)
+		if(e.gun[i].fire and e.gun[i].wait_time <= 0)
 		{
-			gun[i].wait_time += gun[i].delay;
-			gun[i].gun_function(i);
+			e.gun[i].wait_time += e.gun[i].delay;
+			e.gun[i].gun_function(i);
 		}
 	}
 }
 
-void Entity::accelSystem(float dt)
+void accelSystem(Entity & e, float dt)
 {
-	for(auto i : select(accel_mask))
-		velocity[i] += dt * acceleration[i];
+	for(auto i : e.select(accel_mask))
+		e.velocity[i] += dt * e.acceleration[i];
 }
 
-void Entity::moveSystem(float dt)
+void moveSystem(Entity & e, float dt)
 {
-	for(auto i : select(move_mask))
-		position[i] += dt * velocity[i];
+	for(auto i : e.select(move_mask))
+		e.position[i] += dt * e.velocity[i];
 }
 
-void Entity::collisionSystem(void)
+void collisionSystem(Entity & e)
 {
 	// first construct collision shape for entities that can collide
 	struct Body{
@@ -48,15 +50,15 @@ void Entity::collisionSystem(void)
 	};
 	std::vector<Body> players;
 	std::vector<Body> enemies;
-	for(auto i : select(collision_effect_mask))
+	for(auto i : e.select(collision_effect_mask))
 	{
 
 		Body obj;
 		obj.id = i;
-		obj.shape = Circ(position[i], size[i].w / 2.5);
-		if(faction[i] == Faction::PLAYER)
+		obj.shape = Circ(e.position[i], e.size[i].w / 2.5);
+		if(e.faction[i] == Faction::PLAYER)
 			players.push_back(obj);
-		else if(faction[i] == Faction::ENEMY)
+		else if(e.faction[i] == Faction::ENEMY)
 			enemies.push_back(obj);
 	}
 	
@@ -67,43 +69,42 @@ void Entity::collisionSystem(void)
 		{
 			if(Circ::intersect(i.shape, j.shape))
 			{
-				collision_effect[i.id](j.id);
-				collision_effect[j.id](i.id);
+				e.collision_effect[i.id](j.id);
+				e.collision_effect[j.id](i.id);
 			}
 		}
 	}
 }
 
-void Entity::timerSystem(float dt)
+void timerSystem(Entity & e, float dt)
 {
-	for(auto i : select(Component::TIMER))
+	for(auto i : e.select(Component::TIMER))
 	{
-		timer[i] -= dt;
-		if(timer[i] <= 0 and timer_function[i] != nullptr)
-			timer_function[i](i);
+		e.timer[i] -= dt;
+		if(e.timer[i] <= 0 and e.timer_function[i] != nullptr)
+			e.timer_function[i](i);
 	}
 }
 
-void Entity::deathSystem(void)
+void deathSystem(Entity & e)
 {
-	for(auto i : select(Component::HEALTH))
+	for(auto i : e.select(Component::HEALTH))
 	{
-		bool dead = health[i] <= 0;
-		if(dead and death_function[i] != nullptr)
-			death_function[i](i);
+		bool dead = e.health[i] <= 0;
+		if(dead and e.death_function[i] != nullptr)
+			e.death_function[i](i);
 	}
 }
 
-void Entity::drawSystem(SDL_Renderer * renderer, Rect const & camera)
+void drawSystem(Entity & e, SDL_Renderer * renderer, Rect const & camera)
 {
-	for(auto i : select(draw_mask))
+	for(auto i : e.select(draw_mask))
 	{
 		SDL_Rect posRect;
-		SDL_QueryTexture(image[i], nullptr, nullptr, &posRect.w, &posRect.h);
-		posRect.x = int(position[i].x) - posRect.w / 2 - int(camera.x);
-		posRect.y = int(position[i].y) - posRect.h / 2 - int(camera.y);
-		SDL_RenderCopyEx(renderer, image[i], nullptr, &posRect, rad2deg(direction[i] + PI / 2.0), nullptr, SDL_FLIP_NONE);
+		SDL_QueryTexture(e.image[i], nullptr, nullptr, &posRect.w, &posRect.h);
+		posRect.x = int(e.position[i].x) - posRect.w / 2 - int(camera.x);
+		posRect.y = int(e.position[i].y) - posRect.h / 2 - int(camera.y);
+		SDL_RenderCopyEx(renderer, e.image[i], nullptr, &posRect, rad2deg(e.direction[i] + PI / 2.0), nullptr, SDL_FLIP_NONE);
 
 	}
-}
 }

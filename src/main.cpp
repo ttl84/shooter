@@ -3,6 +3,7 @@
 #include <map>
 #include <string>
 #include <functional>
+#include <sstream>
 
 #include "SDL2/SDL.h"
 
@@ -10,6 +11,7 @@
 
 #include "Entity.h"
 #include "components.h"
+#include "systems.h"
 
 #include "Rect.h"
 #include "Circ.h"
@@ -23,10 +25,13 @@
 
 using ecs::Component;
 
-namespace player_speed{
-	float fast = 200;
-	float slow = 50;
-	float normal = slow + (fast - slow) / 2.0;
+namespace player_stat{
+	float fast_speed = 200;
+	float slow_speed = 50;
+	float normal_speed = slow_speed + (fast_speed - slow_speed) / 2.0;
+	float forward_accel = 150;
+	float backward_accel = 50;
+	float side_accel = 1000;
 }
 Gun player_gun(ecs::Entity & entities, GameState & state)
 {
@@ -52,8 +57,9 @@ Gun player_gun(ecs::Entity & entities, GameState & state)
 				Vec2::fromAngle(e.direction[gunner] + state.randFloat(-0.01, 0.01));
 			e.direction[bullet] = e.direction[gunner];
 			
-			e.collision_effect[bullet] = [&e](ecs::entity_t victim){
+			e.collision_effect[bullet] = [&](ecs::entity_t victim){
 				e.health[victim] -= 1;
+				state.enemyHit();
 			};
 			e.faction[bullet] = Faction::PLAYER;
 			
@@ -98,12 +104,16 @@ Gun basic_gun(ecs::Entity & entities, GameState & state)
 			e.velocity[bullet] = e.velocity[gunner] + e.gun[gunner].bullet_speed * direction;
 			e.image[bullet] = state.loadTexture("bullet1");
 			e.timer[bullet] = 4.0;
-			e.timer_function[bullet] = [&e](ecs::entity_t bullet){e.health[bullet] = 0;};
+			e.timer_function[bullet] = [&e](ecs::entity_t bullet){
+				e.health[bullet] = 0;
+			};
 			
 			e.health[bullet] = 1;
-			e.death_function[bullet] = [&e](ecs::entity_t bullet){e.remove(bullet);};
+			e.death_function[bullet] = [&e](ecs::entity_t bullet){
+				e.remove(bullet);
+			};
 			
-			e.collision_effect[bullet] = [&e](ecs::entity_t victim){
+			e.collision_effect[bullet] = [&](ecs::entity_t victim){
 				e.health[victim] -= 1;
 			};
 			e.faction[bullet] = e.faction[gunner];
@@ -123,27 +133,27 @@ ecs::entity_t get_player(ecs::Entity & entities)
 	return i;
 }
 void keyboard_control(ecs::Entity & entities, ecs::entity_t i)
-{	
+{
 	float speed = entities.velocity[i].norm();
 	
 	// makes sure player  doesn't move backwards
-	if(fabs(entities.velocity[i].y) > player_speed::fast)
-		entities.velocity[i].y = player_speed::fast * -1;
-	if(fabs(entities.velocity[i].y) < player_speed::slow)
-		entities.velocity[i].y = player_speed::slow * -1;
+	if(fabs(entities.velocity[i].y) > player_stat::fast_speed)
+		entities.velocity[i].y = player_stat::fast_speed * -1;
+	if(fabs(entities.velocity[i].y) < player_stat::slow_speed)
+		entities.velocity[i].y = player_stat::slow_speed * -1;
 	
 	
 	if(control::faster)
 	{
-		if(speed < player_speed::fast)
-			entities.acceleration[i].y = -30;
+		if(speed < player_stat::fast_speed)
+			entities.acceleration[i].y = -player_stat::forward_accel;
 		else
 			entities.acceleration[i].y = 0;
 	}
 	else if(control::slower)
 	{
-		if(speed > player_speed::slow)
-			entities.acceleration[i].y = 30;
+		if(speed > player_stat::slow_speed)
+			entities.acceleration[i].y = player_stat::backward_accel;
 		else
 			entities.acceleration[i].y = 0;
 	}
@@ -154,17 +164,21 @@ void keyboard_control(ecs::Entity & entities, ecs::entity_t i)
 	
 	if(control::left)
 	{
-		entities.acceleration[i].x = (entities.velocity[i].x >= 0 ? -200 : -100);
+		entities.acceleration[i].x = -player_stat::side_accel;
 	}
 	else if(control::right)
 	{
-		entities.acceleration[i].x = (entities.velocity[i].x <= 0 ? 200 : 100);
+		entities.acceleration[i].x = player_stat::side_accel;
 	}
 	else
 	{
-		entities.acceleration[i].x = -1 * entities.velocity[i].x;
+		entities.acceleration[i].x = -2 * entities.velocity[i].x;
 	}
-	entities.direction[i] = entities.velocity[i].angle();
+	
+	float forwardAngle = Vec2(0, -1).angle();
+	float velocityAngle = entities.velocity[i].angle();
+	float diffAngle = velocityAngle -  forwardAngle;
+	entities.direction[i] = forwardAngle + diffAngle / 4;
 	if(control::fire)
 	{
 		entities.gun[i].fire = true;
@@ -177,7 +191,7 @@ void keyboard_control(ecs::Entity & entities, ecs::entity_t i)
 }
 
 std::function<void(ecs::Entity &, unsigned)> 
-spawn_player(ecs::Entity & entities, GameState & state)
+spawnPlayerFunc(ecs::Entity & entities, GameState & state)
 {
 	std::function<void(ecs::Entity &, unsigned)> playerCreationFunc =
 		[&state](ecs::Entity & e, unsigned player){
@@ -193,7 +207,7 @@ spawn_player(ecs::Entity & entities, GameState & state)
 		}
 		e.position[player] = state.camera.getCenter();
 		
-		e.velocity[player] = player_speed::normal * Vec2(0, -1);
+		e.velocity[player] = player_stat::normal_speed * Vec2(0, -1);
 		e.acceleration[player] = Vec2(0, 0);
 		e.direction[player] = Vec2(0, -1).angle();
 		
@@ -212,8 +226,11 @@ spawn_player(ecs::Entity & entities, GameState & state)
 			keyboard_control(e, player);
 		};
 		
-		e.death_function[player] = [&e](ecs::entity_t player){
-			e.remove(player);
+		e.death_function[player] = [&](ecs::entity_t player){
+			e.mask[player] = combine(ecs::move_mask, Component::CAMERA_FOCUS);
+			e.position[player].x = state.camera.getCenter().x;
+			e.velocity[player].x = 0;
+			state.playerDie();
 		};
 	};
 	return playerCreationFunc;
@@ -268,6 +285,8 @@ spawnEnemyFunc1(ecs::Entity & entities, GameState & state)
 			e.timer_function[enemy] = [&e](ecs::entity_t enemy){
 				e.remove(enemy);
 			};
+			
+			state.enemyKill();
 		};
 	};
 	return enemyCreationFunc;
@@ -281,7 +300,7 @@ spawnEnemyFunc2(ecs::Entity & entities, GameState & state)
 		[&state, enemyCreationFunc1](ecs::Entity & e, unsigned enemy){
 		enemyCreationFunc1(e, enemy);
 		e.position[enemy].y = state.bounds.getBottom();
-		e.velocity[enemy] = Vec2(0, -player_speed::fast);
+		e.velocity[enemy] = Vec2(0, -player_stat::fast_speed);
 		e.direction[enemy] = Vec2(0, -1).angle();
 		
 		e.image[enemy] = state.loadTexture("enemy0");
@@ -304,10 +323,10 @@ spawnEnemyFunc2(ecs::Entity & entities, GameState & state)
 
 void spawn_enemies(ecs::Entity & entities, GameState & state)
 {
-	float roll = state.randRoll();
-	if(roll < 0.0001)
+	auto roll = state.randEnemySpawn();
+	if(roll <= 0.0001)
 		entities.scheduleCreationJob(spawnEnemyFunc2(entities, state));
-	else if(roll < 0.0002)
+	else if(roll <= 0.0002)
 		entities.scheduleCreationJob(spawnEnemyFunc1(entities, state));
 }
 
@@ -321,8 +340,8 @@ void update_camera(ecs::Entity & entities, GameState & state)
 		{
 			float center_y = entities.position[i].y;
 			state.updateCurrentY(center_y);
-			float adjustment = entities.velocity[i].y + player_speed::normal;
-			float multiplier = state.windowHeight * 0.95 / (player_speed::fast - player_speed::slow);
+			float adjustment = entities.velocity[i].y + player_stat::normal_speed;
+			float multiplier = state.windowHeight * 0.95 / (player_stat::fast_speed - player_stat::slow_speed);
 			state.camera.setCenterY(floor(center_y - adjustment * multiplier));
 			return;
 		}
@@ -380,15 +399,15 @@ void despawn_star(GameState & state)
 }
 void update(ecs::Entity & entities, GameState & state, float const dt)
 {
-	entities.thinkSystem();
-	entities.shootSystem(dt);
+	thinkSystem(entities);
+	shootSystem(entities, dt);
 	
-	entities.accelSystem(dt);
-	entities.moveSystem(dt);
+	accelSystem(entities, dt);
+	moveSystem(entities, dt);
 	
-	entities.collisionSystem();
-	entities.timerSystem(dt);
-	entities.deathSystem();
+	collisionSystem(entities);
+	timerSystem(entities, dt);
+	deathSystem(entities);
 	
 	update_camera(entities, state);
 	update_bounds(entities, state);
@@ -413,14 +432,15 @@ void draw_stars(GameState & state)
 	}
 }
 
+
 void draw(ecs::Entity & entities, GameState & state)
 {
 	SDL_SetRenderDrawColor(state.getRenderer(), 0, 0, 0, 255);
 	SDL_RenderClear(state.getRenderer());
 	
 	draw_stars(state);
-	entities.drawSystem(state.getRenderer(), state.camera);
-	
+	drawSystem(entities, state.getRenderer(), state.camera);
+	state.drawUI();
 	SDL_RenderPresent(state.getRenderer());
 }
 int main(int argc, char ** argv)
@@ -430,7 +450,7 @@ int main(int argc, char ** argv)
 	static ecs::Entity entities;
 	static GameState state("shooter game", 480, 480);
 	
-	entities.scheduleCreationJob(spawn_player(entities, state));
+	entities.scheduleCreationJob(spawnPlayerFunc(entities, state));
 	entities.executeCreationJobs();
 	
 	Uint32 frame_begin = 0, frame_end = 0;

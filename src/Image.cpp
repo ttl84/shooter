@@ -6,8 +6,8 @@ static SDL_Surface * makeSurface(Image const & img)
 	CharImg const & bytes = img.getBytes();
 	Palette const & palette = img.getPalette();
 	Pixel colorkey = img.getColorkey();
-	unsigned width = bytes.width();
-	unsigned height = bytes.height();
+	unsigned width = bytes.getWidth();
+	unsigned height = bytes.getHeight();
 	
 	SDL_Surface * surface = SDL_CreateRGBSurface(0, width, height, 32, 0, 0, 0, 0);
 	SDL_SetColorKey(surface, SDL_TRUE, SDL_MapRGB(surface->format, colorkey.r, colorkey.g, colorkey.b));

@@ -9,15 +9,15 @@ class CharImg{
 public:
 	CharImg() : myChars(""), myWidth(0), myHeight(0) {}
 	CharImg(std::string const & s, char delimiter = '\n');
-	unsigned width() const
+	unsigned getWidth() const
 	{
 		return myWidth;
 	}
-	unsigned height() const
+	unsigned getHeight() const
 	{
 		return myHeight;
 	}
-	std::string const & chars() const
+	std::string chars() const
 	{
 		return myChars;
 	}

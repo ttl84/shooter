@@ -27,6 +27,14 @@ public:
 	{
 		return myColorkey;
 	}
+	unsigned getWidth() const
+	{
+		return myBytes.getWidth();
+	}
+	unsigned getHeight() const
+	{
+		return myBytes.getHeight();
+	}
 	Image(CharImg const & bytes, Palette const & palette, Pixel colorkey)
 	: myBytes(bytes), myPalette(palette), myColorkey(colorkey), good(true)
 	{
