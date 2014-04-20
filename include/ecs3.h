@@ -1,9 +1,11 @@
 #ifndef ecs3_H
 #define ecs3_H
 #include <stack>
+#include <queue>
 #include <vector>
 #include <unordered_map>
 #include <memory>
+#include <functional>
 #include <iostream>
 namespace ecs3{
 	// polymorphic component arrays
@@ -12,6 +14,7 @@ namespace ecs3{
 		ComponentBase() = delete;
 	public:
 		virtual ~ComponentBase(){}
+		virtual void swapEle(unsigned i, unsigned j) = 0;
 	};
 	
 	template<class T>
@@ -19,31 +22,51 @@ namespace ecs3{
 		ComponentList(unsigned size): std::vector<T>(size){}
 		ComponentList(ComponentList<T> const & ) = delete;
 		ComponentList<T> const & operator = (ComponentList<T> const &) = delete;
+		void swapEle(unsigned i, unsigned j) override
+		{
+			std::swap(this->at(i), this->at(j));
+		}
 	};
 }
 
+namespace ecs3{
+	class System{
+	private:
+		System() = delete;
+	public:
+		virtual ~System(){}
+		virtual void run() = 0;
+	};
+}
 
 namespace ecs3{
 	template<class cpnT, class maskT>
-	class World{
+	class BasicWorld{
 	public:
 		typedef cpnT cpn_t;
 		typedef maskT mask_t;
+		typedef std::function<void(BasicWorld<cpnT, maskT> &, unsigned) > EntityInitFunc;
 	private:
+		
+
+		// components
 		std::vector<mask_t> masks;
 		std::unordered_map<cpn_t, std::unique_ptr<ComponentBase>> components;
 		std::stack<unsigned, std::vector<unsigned>> freelist;
 		unsigned const size;
+
+		// entity creation
+		std::queue<EntityInitFunc> creationQueue;
+
+		// systems
+		std::vector<std::unique_ptr<System> > systems;
 	public:
 		// construct a world with fixed number of available slots
-		World(unsigned Size) :masks(Size), size(Size)
-		{
-			for(unsigned i = size; i != 0; i--)
-				freelist.push(i);
-		}
+		BasicWorld(unsigned Size) :masks(Size), size(Size){}
+
 		// disable copying;
-		World(World const &) = delete;
-		World const & operator =(World const &) = delete;
+		BasicWorld(BasicWorld const &) = delete;
+		BasicWorld const & operator =(BasicWorld const &) = delete;
 
 		// map a component number to a new component list
 		template<class T>
@@ -52,7 +75,7 @@ namespace ecs3{
 			components.emplace(id, new ComponentList<T>(size));
 		}
 		
-		// get a pointer to a component list
+		// get a ref to a component list
 		template<class T>
 		ComponentList<T> & getComponent(cpn_t id)
 		{
@@ -65,10 +88,45 @@ namespace ecs3{
 			return *static_cast<ComponentList<T>*>(it->second.get());
 		}
 	
-		unsigned getSize() const;
+		void addSystem(System * sys)
+		{
+			systems.emplace_back(sys);
+		}
+
+		void runSystems()
+		{
+			for (auto & sys : systems)
+				sys->run();
+		}
+
+		void scheduleCreation(EntityInitFunc func)
+		{
+			creationQueue.push(func);
+		}
+
+		void executeCreation()
+		{
+			while(not creationQueue.empty())
+			{
+				auto func = creationQueue.front();
+				creationQueue.pop();
+				unsigned i = claim();
+				func(*this, i);
+			}
+		}
+		unsigned getSize() const
+		{
+			return size;
+		}
 	
-		mask_t getMask(unsigned i) const;
-		void setMask(unsigned i, mask_t m);
+		mask_t getMask(unsigned i) const
+		{
+			return masks(i);
+		}
+		void setMask(unsigned i, mask_t m)
+		{
+			masks[i] = m;
+		}
 		
 		// number of slots that can be claimed
 		unsigned slotsLeft() const
@@ -87,8 +145,8 @@ namespace ecs3{
 			}
 			else
 			{
-				std::cerr << __func__ << ": no more slots to claim" << std::endl;
-				abort();
+				unsigned next = masks.size() - 1;
+				return next;
 			}
 		}
 		// make the slot claimable again

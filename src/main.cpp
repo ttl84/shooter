@@ -422,12 +422,15 @@ void update(ecs::Entity & entities, GameState & state, float const dt)
 void draw_stars(GameState & state)
 {
 	SDL_Texture * star_tex = state.loadTexture("star");
+	int width, height;
+	SDL_QueryTexture(star_tex, nullptr, nullptr, &width, &height);
 	for(Vec2 & star : stars)
 	{
 		SDL_Rect position;
 		position.x = star.x - state.camera.x;
 		position.y = star.y - state.camera.y;
-		SDL_QueryTexture(star_tex, nullptr, nullptr, &position.w, &position.h);
+		position.w = width;
+		position.h = height;
 		SDL_RenderCopy(state.getRenderer(), star_tex, nullptr, &position);
 	}
 }
