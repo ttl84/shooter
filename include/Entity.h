@@ -23,15 +23,13 @@ namespace ecs{
 		SDL_Texture * image[MAX_ENTITIES];
 		
 		Life life[MAX_ENTITIES];
-		float timer[MAX_ENTITIES];
+		Timer timer[MAX_ENTITIES];
 		unsigned target[MAX_ENTITIES];
 		
 		Gun gun[MAX_ENTITIES];
 		Faction faction[MAX_ENTITIES];
 		
 		std::function<void(unsigned)> think_function[MAX_ENTITIES];
-		std::function<void(unsigned)> death_function[MAX_ENTITIES];
-		std::function<void(unsigned)> timer_function[MAX_ENTITIES];
 		std::function<void(unsigned)> collision_effect[MAX_ENTITIES];
 		
 		// constructors

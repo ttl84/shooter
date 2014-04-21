@@ -80,9 +80,11 @@ void timerSystem(Entity & e, float dt)
 {
 	for(auto i : e.select(Component::TIMER))
 	{
-		e.timer[i] -= dt;
-		if(e.timer[i] <= 0 and e.timer_function[i] != nullptr)
-			e.timer_function[i](i);
+		auto & timer = e.timer[i];
+
+		timer.remaining -= dt;
+		if(timer.remaining <= 0 and timer.action != nullptr)
+			timer.action(i);
 	}
 }
 
@@ -90,9 +92,9 @@ void deathSystem(Entity & e)
 {
 	for(auto i : e.select(Component::LIFE))
 	{
-		bool dead = e.life[i].health <= 0;
-		if(dead and e.life[i].death_function != nullptr)
-			e.life[i].death_function(i);
+		auto & life = e.life[i];
+		if(life.value <= 0 and life.deathAction != nullptr)
+			life.deathAction(i);
 	}
 }
 

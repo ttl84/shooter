@@ -346,16 +346,21 @@ Gun player_gun(GameState & state)
 			e.direction[bullet] = e.direction[gunner];
 			
 			e.collision_effect[bullet] = [&](unsigned victim){
-				e.life[victim].health -= 1;
+				e.life[victim].value -= 1;
 				state.enemyHit();
 			};
 			e.faction[bullet] = Faction::PLAYER;
 			
-			e.life[bullet].health = 2;
+			// bullet lives for two seconds
+			e.timer[bullet].remaining = 2;
+			e.timer[bullet].action = [&e](unsigned gunner){
+				e.remove(gunner);
+			};
 			
-			// visual effect for bullet if it hits something
-			e.life[bullet].death_function = [&e, &state](unsigned bullet) -> void{
-				e.timer[bullet] = 0.5;
+			// visual effect happens when bullet dies
+			e.life[bullet].value = 2;
+			e.life[bullet].deathAction = [&e, &state](unsigned bullet) -> void{
+				e.timer[bullet].remaining = 0.5;
 				e.image[bullet] = state.loadTexture("explosion0");
 				e.mask[bullet] = ecs::combine(
 					Component::TIMER,
@@ -364,8 +369,7 @@ Gun player_gun(GameState & state)
 				
 			};
 			
-			e.timer[bullet] = 2;
-			e.timer_function[bullet] = [&e](unsigned gunner){e.remove(gunner);};
+			
 		};
 		entities.scheduleCreationJob(bulletCreationFunc);
 	};
@@ -392,18 +396,18 @@ Gun basic_gun(GameState & state)
 				direction /= direction.norm();
 			e.velocity[bullet] = e.velocity[gunner] + e.gun[gunner].bullet_speed * direction;
 			e.image[bullet] = state.loadTexture("bullet1");
-			e.timer[bullet] = 4.0;
-			e.timer_function[bullet] = [&e](unsigned bullet){
-				e.life[bullet].health = 0;
-			};
+
+			e.timer[bullet]= {4.0, [&e](unsigned bullet){
+				e.life[bullet].value = 0;
+			}};
 			
-			e.life[bullet].health = 1;
-			e.life[bullet].death_function = [&e](unsigned bullet){
+			e.life[bullet].value = 1;
+			e.life[bullet].deathAction = [&e](unsigned bullet){
 				e.remove(bullet);
 			};
 			
 			e.collision_effect[bullet] = [&](unsigned victim){
-				e.life[victim].health -= 1;
+				e.life[victim].value -= 1;
 			};
 			e.faction[bullet] = e.faction[gunner];
 		};
@@ -439,7 +443,7 @@ spawnPlayerFunc(GameState & state)
 		
 		
 		e.collision_effect[player] = [&](unsigned victim){
-			e.life[victim].health -= 10;
+			e.life[victim].value -= 10;
 		};
 		
 		e.faction[player] = Faction::PLAYER;
@@ -448,8 +452,8 @@ spawnPlayerFunc(GameState & state)
 			keyboard_control(state, player);
 		};
 		
-		e.life[player].health = 3;
-		e.life[player].death_function = [&](unsigned player){
+		e.life[player].value = 3;
+		e.life[player].deathAction = [&](unsigned player){
 			e.mask[player] = combine(ecs::move_mask, Component::CAMERA_FOCUS);
 			e.position[player].x = state.camera.getCenter().x;
 			e.velocity[player].x = 0;
@@ -488,15 +492,15 @@ spawnEnemyFunc1(GameState & state)
 		
 		
 		e.collision_effect[enemy] = [&e](unsigned victim){
-			e.life[victim].health -= 2;
+			e.life[victim].value -= 2;
 		};
 		
 		e.faction[enemy] = Faction::ENEMY;
 			
 		e.target[enemy] = get_player(e);
 		
-		e.life[enemy].health = 3;
-		e.life[enemy].death_function = [&e, &state](unsigned enemy){
+		e.life[enemy].value = 3;
+		e.life[enemy].deathAction = [&e, &state](unsigned enemy){
 			e.mask[enemy] = ecs::combine(
 				Component::IMAGE,
 				Component::TIMER,
@@ -504,11 +508,9 @@ spawnEnemyFunc1(GameState & state)
 			
 			e.image[enemy] = state.loadTexture("explosion2");
 			
-			
-			e.timer[enemy] = 0.5;
-			e.timer_function[enemy] = [&e](unsigned enemy){
+			e.timer[enemy] = {0.5, [&e](unsigned enemy){
 				e.remove(enemy);
-			};
+			}};
 			
 			state.enemyKill();
 		};
@@ -535,12 +537,11 @@ spawnEnemyFunc2(GameState & state)
 			e.velocity[enemy].y = e.velocity[target].y + (-50);
 			e.mask[enemy] &= (~ecs::combine(Component::THINK));
 		};
-		e.timer[enemy] = 10.0;
-		e.timer_function[enemy] = [&e, &state](unsigned i){
+		e.timer[enemy] = {10.0, [&e, &state](unsigned i){
 			e.think_function[i] = [&e, &state](unsigned i){
 				e.acceleration[i] = Vec2(state.randFloat(-50, 50), -50);
 			};
-		};
+		}};
 	};
 	return enemyCreationFunc2;
 }

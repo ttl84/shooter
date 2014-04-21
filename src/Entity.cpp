@@ -37,8 +37,8 @@ unsigned Entity::claim()
 	image[next] = nullptr;
 	target[next] = 0;
 	think_function[next] = [](unsigned self){std::cerr << "missing think function\n";};
-	death_function[next] = [](unsigned self){std::cerr << "missing death function\n";};
-	timer_function[next] = [](unsigned self){std::cerr << "missing timer function\n";};
+	life[next].deathAction = [](unsigned self){std::cerr << "missing death function\n";};
+	timer[next].action = [](unsigned self){std::cerr << "missing timer function\n";};
 	return next;
 }
 void Entity::executeCreationJobs()

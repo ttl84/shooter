@@ -15,10 +15,14 @@ struct Gun{
 };
 
 struct Life{
-	int health;
-	std::function<void(unsigned)> death_function;
+	int value;
+	std::function<void(unsigned)> deathAction;
 };
 
+struct Timer{
+	float remaining;
+	std::function<void(unsigned)> action;
+};
 enum class Faction{
 	PLAYER,
 	ENEMY
