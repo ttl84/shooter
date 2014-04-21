@@ -7,8 +7,6 @@
 #include <queue>
 
 namespace ecs{
-	typedef unsigned entity_t;
-	
 	constexpr unsigned MAX_ENTITIES = 256;
 	class Entity{
 	private:
@@ -24,17 +22,17 @@ namespace ecs{
 		Size size[MAX_ENTITIES];
 		SDL_Texture * image[MAX_ENTITIES];
 		
-		int health[MAX_ENTITIES];
+		Life life[MAX_ENTITIES];
 		float timer[MAX_ENTITIES];
-		entity_t target[MAX_ENTITIES];
+		unsigned target[MAX_ENTITIES];
 		
 		Gun gun[MAX_ENTITIES];
 		Faction faction[MAX_ENTITIES];
 		
-		std::function<void(entity_t)> think_function[MAX_ENTITIES];
-		std::function<void(entity_t)> death_function[MAX_ENTITIES];
-		std::function<void(entity_t)> timer_function[MAX_ENTITIES];
-		std::function<void(entity_t)> collision_effect[MAX_ENTITIES];
+		std::function<void(unsigned)> think_function[MAX_ENTITIES];
+		std::function<void(unsigned)> death_function[MAX_ENTITIES];
+		std::function<void(unsigned)> timer_function[MAX_ENTITIES];
+		std::function<void(unsigned)> collision_effect[MAX_ENTITIES];
 		
 		// constructors
 		Entity(void);
@@ -47,10 +45,10 @@ namespace ecs{
 		void scheduleCreationJob(std::function<void(Entity&, unsigned)> initFunc);
 		void executeCreationJobs();
 	private:
-		entity_t claim();
+		unsigned claim();
 	public:
 		
-		void remove(entity_t i);
+		void remove(unsigned i);
 		unsigned count() const;
 		unsigned capacity() const;
 		

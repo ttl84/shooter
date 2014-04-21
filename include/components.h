@@ -14,6 +14,10 @@ struct Gun{
 	Gun(void) : delay(0), bullet_speed(0), wait_time(0), fire(false), gun_function(nullptr) {}
 };
 
+struct Life{
+	int health;
+	std::function<void(unsigned)> death_function;
+};
 
 enum class Faction{
 	PLAYER,
@@ -30,7 +34,7 @@ namespace ecs{
 		
 		IMAGE,
 		
-		HEALTH,
+		LIFE,
 		TIMER,
 		COLLISION_EFFECT,
 		

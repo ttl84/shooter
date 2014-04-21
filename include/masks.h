@@ -73,7 +73,7 @@ namespace ecs{
 		shooter_mask, 
 		collision_effect_mask,
 		Component::IMAGE,
-		Component::HEALTH,
+		Component::LIFE,
 		Component::THINK,
 		Component::CAMERA_FOCUS);
 	
@@ -82,7 +82,7 @@ namespace ecs{
 		shooter_mask,
 		collision_effect_mask,
 		Component::IMAGE,
-		Component::HEALTH);
+		Component::LIFE);
 	
 	mask_t constexpr bullet_mask = combine(
 		move_mask, 
@@ -90,6 +90,6 @@ namespace ecs{
 		Component::DIRECTION,
 		Component::IMAGE, 
 		Component::TIMER, 
-		Component::HEALTH);
+		Component::LIFE);
 }
 #endif

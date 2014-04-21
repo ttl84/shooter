@@ -45,7 +45,7 @@ void collisionSystem(Entity & e)
 {
 	// first construct collision shape for entities that can collide
 	struct Body{
-		entity_t id;
+		unsigned id;
 		Circ shape;
 	};
 	std::vector<Body> players;
@@ -88,11 +88,11 @@ void timerSystem(Entity & e, float dt)
 
 void deathSystem(Entity & e)
 {
-	for(auto i : e.select(Component::HEALTH))
+	for(auto i : e.select(Component::LIFE))
 	{
-		bool dead = e.health[i] <= 0;
-		if(dead and e.death_function[i] != nullptr)
-			e.death_function[i](i);
+		bool dead = e.life[i].health <= 0;
+		if(dead and e.life[i].death_function != nullptr)
+			e.life[i].death_function(i);
 	}
 }
 

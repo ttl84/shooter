@@ -17,9 +17,9 @@ void Entity::scheduleCreationJob(std::function<void(Entity&, unsigned)> initFunc
 {
 	creationQueue.push(initFunc);
 }
-entity_t Entity::claim()
+unsigned Entity::claim()
 {
-	entity_t next;
+	unsigned next;
 	if(myHoles.empty())
 	{
 		if(myCount == MAX_ENTITIES)
@@ -36,9 +36,9 @@ entity_t Entity::claim()
 	}
 	image[next] = nullptr;
 	target[next] = 0;
-	think_function[next] = [](entity_t self){std::cerr << "missing think function\n";};
-	death_function[next] = [](entity_t self){std::cerr << "missing death function\n";};
-	timer_function[next] = [](entity_t self){std::cerr << "missing timer function\n";};
+	think_function[next] = [](unsigned self){std::cerr << "missing think function\n";};
+	death_function[next] = [](unsigned self){std::cerr << "missing death function\n";};
+	timer_function[next] = [](unsigned self){std::cerr << "missing timer function\n";};
 	return next;
 }
 void Entity::executeCreationJobs()
@@ -51,7 +51,7 @@ void Entity::executeCreationJobs()
 		func(*this, id);
 	}
 }
-void Entity::remove(entity_t i)
+void Entity::remove(unsigned i)
 {
 	mask[i] = 0;
 	myHoles.push(i);

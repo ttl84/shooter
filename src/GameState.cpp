@@ -253,7 +253,7 @@ namespace player_stat{
 	float backward_accel = 50;
 	float side_accel = 1000;
 }
-void keyboard_control(GameState & state, ecs::entity_t i)
+void keyboard_control(GameState & state, unsigned i)
 {
 	auto & entities = state.getEntities();
 	auto & keyPress = state.getKeyPress();
@@ -312,9 +312,9 @@ void keyboard_control(GameState & state, ecs::entity_t i)
 	}
 	
 }
-ecs::entity_t get_player(ecs::Entity & entities)
+unsigned get_player(ecs::Entity & entities)
 {
-	ecs::entity_t i;
+	unsigned i;
 	for(i = 0; i < entities.count(); i++)
 		if(ecs::accepts<Component::CAMERA_FOCUS>(entities.mask[i]))
 			break;
@@ -331,7 +331,7 @@ Gun player_gun(GameState & state)
 	
 	
 	
-	g.gun_function = [&entities, &state](ecs::entity_t gunner)
+	g.gun_function = [&entities, &state](unsigned gunner)
 	{
 		
 		std::function<void(ecs::Entity &, unsigned)> bulletCreationFunc =
@@ -345,16 +345,16 @@ Gun player_gun(GameState & state)
 				Vec2::fromAngle(e.direction[gunner] + state.randFloat(-0.01, 0.01));
 			e.direction[bullet] = e.direction[gunner];
 			
-			e.collision_effect[bullet] = [&](ecs::entity_t victim){
-				e.health[victim] -= 1;
+			e.collision_effect[bullet] = [&](unsigned victim){
+				e.life[victim].health -= 1;
 				state.enemyHit();
 			};
 			e.faction[bullet] = Faction::PLAYER;
 			
-			e.health[bullet] = 2;
+			e.life[bullet].health = 2;
 			
 			// visual effect for bullet if it hits something
-			e.death_function[bullet] = [&e, &state](ecs::entity_t bullet) -> void{
+			e.life[bullet].death_function = [&e, &state](unsigned bullet) -> void{
 				e.timer[bullet] = 0.5;
 				e.image[bullet] = state.loadTexture("explosion0");
 				e.mask[bullet] = ecs::combine(
@@ -365,7 +365,7 @@ Gun player_gun(GameState & state)
 			};
 			
 			e.timer[bullet] = 2;
-			e.timer_function[bullet] = [&e](ecs::entity_t gunner){e.remove(gunner);};
+			e.timer_function[bullet] = [&e](unsigned gunner){e.remove(gunner);};
 		};
 		entities.scheduleCreationJob(bulletCreationFunc);
 	};
@@ -378,7 +378,7 @@ Gun basic_gun(GameState & state)
 	g.delay = state.randFloat(0.2, 1.0);
 	g.bullet_speed = state.randFloat(50.0, 150.0);
 	g.wait_time = 0;
-	g.gun_function = [&entities, &state](ecs::entity_t gunner)
+	g.gun_function = [&entities, &state](unsigned gunner)
 	{
 		std::function<void(ecs::Entity &, unsigned)> bulletCreationFunc =
 		[gunner, &state](ecs::Entity & e, unsigned bullet){
@@ -386,24 +386,24 @@ Gun basic_gun(GameState & state)
 			
 			e.position[bullet] = e.position[gunner];
 			
-			ecs::entity_t target = e.target[gunner];
+			unsigned target = e.target[gunner];
 			Vec2 direction = e.position[target] - e.position[gunner];
 			if(direction.norm() > 0)
 				direction /= direction.norm();
 			e.velocity[bullet] = e.velocity[gunner] + e.gun[gunner].bullet_speed * direction;
 			e.image[bullet] = state.loadTexture("bullet1");
 			e.timer[bullet] = 4.0;
-			e.timer_function[bullet] = [&e](ecs::entity_t bullet){
-				e.health[bullet] = 0;
+			e.timer_function[bullet] = [&e](unsigned bullet){
+				e.life[bullet].health = 0;
 			};
 			
-			e.health[bullet] = 1;
-			e.death_function[bullet] = [&e](ecs::entity_t bullet){
+			e.life[bullet].health = 1;
+			e.life[bullet].death_function = [&e](unsigned bullet){
 				e.remove(bullet);
 			};
 			
-			e.collision_effect[bullet] = [&](ecs::entity_t victim){
-				e.health[victim] -= 1;
+			e.collision_effect[bullet] = [&](unsigned victim){
+				e.life[victim].health -= 1;
 			};
 			e.faction[bullet] = e.faction[gunner];
 		};
@@ -436,19 +436,20 @@ spawnPlayerFunc(GameState & state)
 		
 		e.gun[player] = player_gun(state);
 		
-		e.health[player] = 3;
 		
-		e.collision_effect[player] = [&](ecs::entity_t victim){
-			e.health[victim] -= 10;
+		
+		e.collision_effect[player] = [&](unsigned victim){
+			e.life[victim].health -= 10;
 		};
 		
 		e.faction[player] = Faction::PLAYER;
 		
-		e.think_function[player] = [&state](ecs::entity_t player){
+		e.think_function[player] = [&state](unsigned player){
 			keyboard_control(state, player);
 		};
 		
-		e.death_function[player] = [&](ecs::entity_t player){
+		e.life[player].health = 3;
+		e.life[player].death_function = [&](unsigned player){
 			e.mask[player] = combine(ecs::move_mask, Component::CAMERA_FOCUS);
 			e.position[player].x = state.camera.getCenter().x;
 			e.velocity[player].x = 0;
@@ -484,17 +485,18 @@ spawnEnemyFunc1(GameState & state)
 		
 		e.gun[enemy] = basic_gun(state);
 		
-		e.health[enemy] = 3;
 		
-		e.collision_effect[enemy] = [&e](ecs::entity_t victim){
-			e.health[victim] -= 2;
+		
+		e.collision_effect[enemy] = [&e](unsigned victim){
+			e.life[victim].health -= 2;
 		};
 		
 		e.faction[enemy] = Faction::ENEMY;
 			
 		e.target[enemy] = get_player(e);
 		
-		e.death_function[enemy] = [&e, &state](ecs::entity_t enemy){
+		e.life[enemy].health = 3;
+		e.life[enemy].death_function = [&e, &state](unsigned enemy){
 			e.mask[enemy] = ecs::combine(
 				Component::IMAGE,
 				Component::TIMER,
@@ -504,7 +506,7 @@ spawnEnemyFunc1(GameState & state)
 			
 			
 			e.timer[enemy] = 0.5;
-			e.timer_function[enemy] = [&e](ecs::entity_t enemy){
+			e.timer_function[enemy] = [&e](unsigned enemy){
 				e.remove(enemy);
 			};
 			
@@ -528,14 +530,14 @@ spawnEnemyFunc2(GameState & state)
 		e.image[enemy] = state.loadTexture("enemy0");
 		
 		e.mask[enemy] |= ecs::combine(Component::THINK, Component::ACCELERATION, Component::TIMER);
-		e.think_function[enemy] = [&e](ecs::entity_t enemy){
-			ecs::entity_t target = e.target[enemy];
+		e.think_function[enemy] = [&e](unsigned enemy){
+			unsigned target = e.target[enemy];
 			e.velocity[enemy].y = e.velocity[target].y + (-50);
 			e.mask[enemy] &= (~ecs::combine(Component::THINK));
 		};
 		e.timer[enemy] = 10.0;
-		e.timer_function[enemy] = [&e, &state](ecs::entity_t i){
-			e.think_function[i] = [&e, &state](ecs::entity_t i){
+		e.timer_function[enemy] = [&e, &state](unsigned i){
+			e.think_function[i] = [&e, &state](unsigned i){
 				e.acceleration[i] = Vec2(state.randFloat(-50, 50), -50);
 			};
 		};
@@ -557,7 +559,7 @@ void spawn_enemies(GameState & state)
 void update_camera(GameState & state)
 {
 	auto & entities = state.getEntities();
-	for(ecs::entity_t i = 0; i < entities.count(); i++)
+	for(unsigned i = 0; i < entities.count(); i++)
 	{
 		if(ecs::accepts<Component::CAMERA_FOCUS>(entities.mask[i]))
 		{
@@ -574,7 +576,7 @@ void update_camera(GameState & state)
 void update_bounds(GameState & state)
 {
 	auto & entities = state.getEntities();
-	for(ecs::entity_t i = 0; i < entities.count(); i++)
+	for(unsigned i = 0; i < entities.count(); i++)
 	{
 		if(ecs::accepts<Component::CAMERA_FOCUS>(entities.mask[i]))
 		{
@@ -588,7 +590,7 @@ void update_bounds(GameState & state)
 void trap_player(GameState & state)
 {
 	auto & entities = state.getEntities();
-	for(ecs::entity_t i = 0; i < entities.count(); i++)
+	for(unsigned i = 0; i < entities.count(); i++)
 	{
 		if(ecs::accepts<Component::CAMERA_FOCUS>(entities.mask[i]))
 		{
@@ -608,7 +610,7 @@ void trap_player(GameState & state)
 void despawn_entities(GameState & state)
 {
 	auto & entities = state.getEntities();
-	for(ecs::entity_t i = 0; i < entities.count(); i++)
+	for(unsigned i = 0; i < entities.count(); i++)
 	{
 		if(ecs::accepts<Component::POSITION>(entities.mask[i]))
 		{
