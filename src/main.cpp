@@ -14,11 +14,11 @@ int main(int argc, char ** argv)
 	
 	Uint32 frame_begin = 0, frame_end = 0;
 	float dt = TIME_UNIT;
-	while(not control::quit)
+	while(not state.getKeyPress().quit)
 	{
 		frame_begin = frame_end;
 		SDL_Delay(1);
-		handle_event();
+		state.handleEvent();
 		if(dt > MAX_DT)
 			dt = MAX_DT;
 		while(dt > 0)

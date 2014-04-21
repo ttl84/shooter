@@ -1,14 +1,22 @@
 #ifndef GameState_H
 #define GameState_H
 #include "SDL2/SDL.h"
+
 #include "Rect.h"
 #include "Vec2.h"
+
 #include "Font.h"
+#include "input.h"
+
 #include "Entity.h"
+
 #include <deque>
 #include <string>
 #include <random>
 #include <unordered_map>
+
+
+
 class GameState{
 private:
 	float currentY;
@@ -30,7 +38,13 @@ private:
 	std::unordered_map<char, SDL_Texture*> fontTextureMap;
 	std::unordered_map<std::string, SDL_Texture*> textureMap;
 	
-	
+	KeyPress keyPress;
+	KeyBinding keyBinding;
+
+	void initFont();
+	void initKey();
+	void initSDL();
+	void initPRG();
 	
 public:
 	std::string const windowTitle;
@@ -82,6 +96,14 @@ public:
 	{
 		return window;
 	}
+	KeyPress const & getKeyPress()
+	{
+		return keyPress;
+	}
+	ecs::Entity & getEntities()
+	{
+		return entities;
+	}
 	float randFloat(float low, float high)
 	{
 		return std::uniform_real_distribution<float>(low, high)(PRG);
@@ -96,17 +118,7 @@ public:
 	void drawStars();
 	void update(float dt);
 	void draw();
-	
+	void handleEvent();
 };
-std::function<void(ecs::Entity &, unsigned)> 
-spawnPlayerFunc(ecs::Entity & entities, GameState & state);
 
-std::function<void(ecs::Entity &, unsigned)> 
-spawnEnemyFunc1(ecs::Entity & entities, GameState & state);
-
-std::function<void(ecs::Entity &, unsigned)> 
-spawnEnemyFunc2(ecs::Entity & entities, GameState & state);
-
-Gun player_gun(ecs::Entity & entities, GameState & state);
-Gun basic_gun(ecs::Entity & entities, GameState & state);
 #endif

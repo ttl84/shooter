@@ -1,15 +1,25 @@
 #ifndef input_H
 #define input_H
-
-namespace control{
-	extern bool faster;
-	extern bool slower;
-	extern bool left;
-	extern bool right;
-	extern bool fire;
-	extern bool quit;
-	extern bool any;
-}
-void loadKeys(void);
-void handle_event(void);
+#include "SDL2/SDL.h"
+#include <string>
+class KeyPress{
+public:
+	bool faster;
+	bool slower;
+	bool left;
+	bool right;
+	bool fire;
+	bool quit;
+	bool any;
+};
+class KeyBinding{
+public:
+	SDL_Keycode
+		faster,
+		slower,
+		left,
+		right,
+		fire;
+};
+void loadKeyBinding(std::string filename, KeyBinding &);
 #endif

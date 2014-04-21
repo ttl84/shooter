@@ -6,45 +6,64 @@
 #include "systems.h"
 #include <ctime>
 #include <sstream>
+std::function<void(ecs::Entity &, unsigned)> 
+spawnPlayerFunc(GameState & state);
 
-GameState::GameState(std::string title, unsigned width, unsigned height):
-	windowTitle(title),
-	windowWidth(width),
-	windowHeight(height)
+std::function<void(ecs::Entity &, unsigned)> 
+spawnEnemyFunc1(GameState & state);
+
+std::function<void(ecs::Entity &, unsigned)> 
+spawnEnemyFunc2(GameState & state);
+
+void GameState::initFont()
 {
-	
+	bool good;
+	std::tie(font, good) = loadFont("font.txt");
+	for(auto pair : font)
+	{
+		this->fontTextureMap.emplace(pair.first, pair.second.makeTexture(renderer));
+	}
+}
+void GameState::initKey()
+{
+	keyPress = KeyPress{0};
 
+	keyBinding.faster = SDLK_UP;
+	keyBinding.slower = SDLK_DOWN;
+	keyBinding.left = SDLK_LEFT;
+	keyBinding.right = SDLK_RIGHT;
+	keyBinding.fire = SDLK_z;
+	loadKeyBinding("config.txt", keyBinding);
+}
+void GameState::initSDL()
+{
 	// sdl systems
 	SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER);
 	
 	// video
 	window = SDL_CreateWindow(windowTitle.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, 0);
 	renderer = SDL_CreateRenderer(window, -1, 0);
-	
-	// input
-	loadKeys();
-	
-	//font
-	{
-		bool good;
-		std::tie(font, good) = loadFont("font.txt");
-		for(auto pair : font)
-		{
-			this->fontTextureMap.emplace(pair.first, pair.second.makeTexture(renderer));
-		}
-	}
-	
-	// randomness
-	{
-		uint64_t seed;
-		auto currentTime = time(nullptr);
-		memcpy(&seed, &currentTime, std::min(sizeof currentTime, sizeof seed));
-		seed ^= std::clock();
+}
+void GameState::initPRG()
+{
+	uint64_t seed;
+	auto currentTime = time(nullptr);
+	memcpy(&seed, &currentTime, std::min(sizeof currentTime, sizeof seed));
+	seed ^= std::clock();
 
-		PRG = std::mt19937(seed);
-		starPRG = std::mt19937(seed);
-		enemySpawnPRG = std::mt19937(seed);
-	}
+	PRG = std::mt19937(seed);
+	starPRG = std::mt19937(seed);
+	enemySpawnPRG = std::mt19937(seed);
+}
+GameState::GameState(std::string title, unsigned width, unsigned height):
+	windowTitle(title),
+	windowWidth(width),
+	windowHeight(height)
+{
+	initSDL();
+	initKey();
+	initFont();
+	initPRG();
 	
 	reset();
 }
@@ -76,7 +95,7 @@ void GameState::reset()
 	dead = false;
 
 	entities.reset();
-	entities.scheduleCreationJob(spawnPlayerFunc(entities, *this));
+	entities.scheduleCreationJob(spawnPlayerFunc(*this));
 	entities.executeCreationJobs();
 }
 SDL_Texture* GameState::loadTexture(std::string filename)
@@ -222,6 +241,10 @@ void GameState::drawStars()
 }
 
 using ecs::Component;
+
+
+Gun player_gun(ecs::Entity & entities, GameState & state);
+Gun basic_gun(ecs::Entity & entities, GameState & state);
 namespace player_stat{
 	float fast_speed = 200;
 	float slow_speed = 50;
@@ -230,8 +253,10 @@ namespace player_stat{
 	float backward_accel = 50;
 	float side_accel = 1000;
 }
-void keyboard_control(ecs::Entity & entities, ecs::entity_t i)
+void keyboard_control(GameState & state, ecs::entity_t i)
 {
+	auto & entities = state.getEntities();
+	auto & keyPress = state.getKeyPress();
 	float speed = entities.velocity[i].norm();
 	
 	// makes sure player  doesn't move backwards
@@ -241,14 +266,14 @@ void keyboard_control(ecs::Entity & entities, ecs::entity_t i)
 		entities.velocity[i].y = player_stat::slow_speed * -1;
 	
 	
-	if(control::faster)
+	if(keyPress.faster)
 	{
 		if(speed < player_stat::fast_speed)
 			entities.acceleration[i].y = -player_stat::forward_accel;
 		else
 			entities.acceleration[i].y = 0;
 	}
-	else if(control::slower)
+	else if(keyPress.slower)
 	{
 		if(speed > player_stat::slow_speed)
 			entities.acceleration[i].y = player_stat::backward_accel;
@@ -260,11 +285,11 @@ void keyboard_control(ecs::Entity & entities, ecs::entity_t i)
 		entities.acceleration[i].y = 0;
 	}
 	
-	if(control::left)
+	if(keyPress.left)
 	{
 		entities.acceleration[i].x = -player_stat::side_accel;
 	}
-	else if(control::right)
+	else if(keyPress.right)
 	{
 		entities.acceleration[i].x = player_stat::side_accel;
 	}
@@ -277,7 +302,7 @@ void keyboard_control(ecs::Entity & entities, ecs::entity_t i)
 	float velocityAngle = entities.velocity[i].angle();
 	float diffAngle = velocityAngle -  forwardAngle;
 	entities.direction[i] = forwardAngle + diffAngle / 4;
-	if(control::fire)
+	if(keyPress.fire)
 	{
 		entities.gun[i].fire = true;
 	}
@@ -295,8 +320,9 @@ ecs::entity_t get_player(ecs::Entity & entities)
 			break;
 	return i;
 }
-Gun player_gun(ecs::Entity & entities, GameState & state)
+Gun player_gun(GameState & state)
 {
+	auto & entities = state.getEntities();
 	Gun g;
 	g.delay = 0.1;
 	g.bullet_speed = 550.0;
@@ -345,8 +371,9 @@ Gun player_gun(ecs::Entity & entities, GameState & state)
 	};
 	return g;
 }
-Gun basic_gun(ecs::Entity & entities, GameState & state)
+Gun basic_gun(GameState & state)
 {
+	auto & entities = state.getEntities();
 	Gun g;
 	g.delay = state.randFloat(0.2, 1.0);
 	g.bullet_speed = state.randFloat(50.0, 150.0);
@@ -386,7 +413,7 @@ Gun basic_gun(ecs::Entity & entities, GameState & state)
 	return g;
 }
 std::function<void(ecs::Entity &, unsigned)> 
-spawnPlayerFunc(ecs::Entity & entities, GameState & state)
+spawnPlayerFunc(GameState & state)
 {
 	std::function<void(ecs::Entity &, unsigned)> playerCreationFunc =
 		[&state](ecs::Entity & e, unsigned player){
@@ -407,7 +434,7 @@ spawnPlayerFunc(ecs::Entity & entities, GameState & state)
 		e.direction[player] = Vec2(0, -1).angle();
 		
 		
-		e.gun[player] = player_gun(e, state);
+		e.gun[player] = player_gun(state);
 		
 		e.health[player] = 3;
 		
@@ -417,8 +444,8 @@ spawnPlayerFunc(ecs::Entity & entities, GameState & state)
 		
 		e.faction[player] = Faction::PLAYER;
 		
-		e.think_function[player] = [&e](ecs::entity_t player){
-			keyboard_control(e, player);
+		e.think_function[player] = [&state](ecs::entity_t player){
+			keyboard_control(state, player);
 		};
 		
 		e.death_function[player] = [&](ecs::entity_t player){
@@ -431,7 +458,7 @@ spawnPlayerFunc(ecs::Entity & entities, GameState & state)
 	return playerCreationFunc;
 }
 std::function<void(ecs::Entity &, unsigned)> 
-spawnEnemyFunc1(ecs::Entity & entities, GameState & state)
+spawnEnemyFunc1(GameState & state)
 {
 	std::function<void(ecs::Entity &, unsigned)> enemyCreationFunc =
 		[&state](ecs::Entity & e, unsigned enemy){
@@ -455,7 +482,7 @@ spawnEnemyFunc1(ecs::Entity & entities, GameState & state)
 		e.direction[enemy] = Vec2(0, 1).angle();
 		
 		
-		e.gun[enemy] = basic_gun(e, state);
+		e.gun[enemy] = basic_gun(state);
 		
 		e.health[enemy] = 3;
 		
@@ -488,9 +515,9 @@ spawnEnemyFunc1(ecs::Entity & entities, GameState & state)
 }
 
 std::function<void(ecs::Entity &, unsigned)> 
-spawnEnemyFunc2(ecs::Entity & entities, GameState & state)
+spawnEnemyFunc2(GameState & state)
 {
-	auto enemyCreationFunc1 = spawnEnemyFunc1(entities, state);
+	auto enemyCreationFunc1 = spawnEnemyFunc1(state);
 	std::function<void(ecs::Entity &, unsigned)> enemyCreationFunc2 =
 		[&state, enemyCreationFunc1](ecs::Entity & e, unsigned enemy){
 		enemyCreationFunc1(e, enemy);
@@ -518,16 +545,18 @@ spawnEnemyFunc2(ecs::Entity & entities, GameState & state)
 
 
 
-void spawn_enemies(ecs::Entity & entities, GameState & state)
+void spawn_enemies(GameState & state)
 {
+	auto & entities = state.getEntities();
 	auto roll = state.randEnemySpawn();
 	if(roll <= 0.0001)
-		entities.scheduleCreationJob(spawnEnemyFunc2(entities, state));
+		entities.scheduleCreationJob(spawnEnemyFunc2(state));
 	else if(roll <= 0.0002)
-		entities.scheduleCreationJob(spawnEnemyFunc1(entities, state));
+		entities.scheduleCreationJob(spawnEnemyFunc1(state));
 }
-void update_camera(ecs::Entity & entities, GameState & state)
+void update_camera(GameState & state)
 {
+	auto & entities = state.getEntities();
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
 		if(ecs::accepts<Component::CAMERA_FOCUS>(entities.mask[i]))
@@ -542,8 +571,9 @@ void update_camera(ecs::Entity & entities, GameState & state)
 	}
 			
 }
-void update_bounds(ecs::Entity & entities, GameState & state)
+void update_bounds(GameState & state)
 {
+	auto & entities = state.getEntities();
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
 		if(ecs::accepts<Component::CAMERA_FOCUS>(entities.mask[i]))
@@ -555,8 +585,9 @@ void update_bounds(ecs::Entity & entities, GameState & state)
 	}
 			
 }
-void trap_player(ecs::Entity & entities, GameState & state)
+void trap_player(GameState & state)
 {
+	auto & entities = state.getEntities();
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
 		if(ecs::accepts<Component::CAMERA_FOCUS>(entities.mask[i]))
@@ -574,8 +605,9 @@ void trap_player(ecs::Entity & entities, GameState & state)
 	}
 			
 }
-void despawn_entities(ecs::Entity & entities, GameState & state)
+void despawn_entities(GameState & state)
 {
+	auto & entities = state.getEntities();
 	for(ecs::entity_t i = 0; i < entities.count(); i++)
 	{
 		if(ecs::accepts<Component::POSITION>(entities.mask[i]))
@@ -592,7 +624,7 @@ void GameState::update(float const dt)
 {
 	if(dead)
 	{
-		if(control::any)
+		if(keyPress.any)
 			reset();
 	}
 	thinkSystem(entities);
@@ -605,12 +637,12 @@ void GameState::update(float const dt)
 	timerSystem(entities, dt);
 	deathSystem(entities);
 	
-	update_camera(entities, *this);
-	update_bounds(entities, *this);
-	trap_player(entities, *this);
+	update_camera(*this);
+	update_bounds(*this);
+	trap_player(*this);
 	
-	spawn_enemies(entities, *this);
-	despawn_entities(entities, *this);
+	spawn_enemies(*this);
+	despawn_entities(*this);
 
 	updateStars();
 	
@@ -628,4 +660,47 @@ void GameState::draw()
 	drawSystem(entities, renderer, camera);
 	drawUI();
 	SDL_RenderPresent(renderer);
+}
+void GameState::handleEvent()
+{
+	keyPress.any = false;
+	SDL_Event e;
+	while(SDL_PollEvent(&e))
+	{
+		if(e.type == SDL_KEYDOWN)
+		{
+			keyPress.any = true;
+			SDL_Keycode symbol = e.key.keysym.sym;
+			if(symbol == keyBinding.faster)
+				keyPress.faster = true;
+			else if(symbol == keyBinding.slower)
+				keyPress.slower = true;
+			else if(symbol == keyBinding.left)
+				keyPress.left = true;
+			else if(symbol == keyBinding.right)
+				keyPress.right = true;
+			else if(symbol == keyBinding.fire)
+				keyPress.fire = true;
+			else if(symbol == SDLK_ESCAPE)
+				keyPress.quit = true;
+		}
+		else if(e.type == SDL_KEYUP)
+		{
+			SDL_Keycode symbol = e.key.keysym.sym;
+			if(symbol == keyBinding.faster)
+				keyPress.faster = false;
+			else if(symbol == keyBinding.slower)
+				keyPress.slower = false;
+			else if(symbol == keyBinding.left)
+				keyPress.left = false;
+			else if(symbol == keyBinding.right)
+				keyPress.right = false;
+			else if(symbol == keyBinding.fire)
+				keyPress.fire = false;
+		}
+		else if(e.type == SDL_QUIT)
+		{
+			keyPress.quit = true;
+		}
+	}
 }

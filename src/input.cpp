@@ -3,24 +3,8 @@
 #include "filereader/FileReader.h"
 #include <iostream>
 #include <fstream>
-namespace control{
-	bool faster = false;
-	bool slower = false;
-	bool left = false;
-	bool right = false;
-	bool fire = false;
-	bool quit = false;
-	bool any = false;
-}
-namespace keys{ //key bindings, can be changed
-	SDL_Keycode
-		faster = SDLK_UP,
-		slower = SDLK_DOWN,
-		left = SDLK_LEFT,
-		right = SDLK_RIGHT,
-		fire = SDLK_z;
-}
-bool strToKeycode(std::string name, SDL_Keycode & output)
+
+static bool strToKeycode(std::string name, SDL_Keycode & output)
 {
 	#define BEGIN_CASE()\
 	if(false){}
@@ -116,71 +100,29 @@ bool strToKeycode(std::string name, SDL_Keycode & output)
 	#undef BEGIN_CASE
 	#undef END_CASE
 }
-void loadKeys(void)
+void loadKeyBinding(std::string filename, KeyBinding & keyBinding)
 {
-	std::ifstream is("config.txt");
+	std::ifstream is(filename);
 	FileReader fr(is);
 	
 	auto obj = fr.getString("faster");
 	if(obj != nullptr)
-		strToKeycode(obj->datum, keys::faster);
+		strToKeycode(obj->datum, keyBinding.faster);
 	
 	obj = fr.getString("slower");
 	if(obj != nullptr)
-		strToKeycode(obj->datum, keys::slower);
+		strToKeycode(obj->datum, keyBinding.slower);
 	
 	obj = fr.getString("left");
 	if(obj != nullptr)
-		strToKeycode(obj->datum, keys::left);
+		strToKeycode(obj->datum, keyBinding.left);
 	
 	obj = fr.getString("right");
 	if(obj != nullptr)
-		strToKeycode(obj->datum, keys::right);
+		strToKeycode(obj->datum, keyBinding.right);
 	
 	obj = fr.getString("fire");
 	if(obj != nullptr)
-		strToKeycode(obj->datum, keys::fire);
+		strToKeycode(obj->datum, keyBinding.fire);
 }
-void handle_event(void)
-{
-	control::any = false;
-	SDL_Event e;
-	while(SDL_PollEvent(&e))
-	{
-		if(e.type == SDL_KEYDOWN)
-		{
-			control::any = true;
-			SDL_Keycode symbol = e.key.keysym.sym;
-			if(symbol == keys::faster)
-				control::faster = true;
-			else if(symbol == keys::slower)
-				control::slower = true;
-			else if(symbol == keys::left)
-				control::left = true;
-			else if(symbol == keys::right)
-				control::right = true;
-			else if(symbol == keys::fire)
-				control::fire = true;
-			else if(symbol == SDLK_ESCAPE)
-				control::quit = true;
-		}
-		else if(e.type == SDL_KEYUP)
-		{
-			SDL_Keycode symbol = e.key.keysym.sym;
-			if(symbol == keys::faster)
-				control::faster = false;
-			else if(symbol == keys::slower)
-				control::slower = false;
-			else if(symbol == keys::left)
-				control::left = false;
-			else if(symbol == keys::right)
-				control::right = false;
-			else if(symbol == keys::fire)
-				control::fire = false;
-		}
-		else if(e.type == SDL_QUIT)
-		{
-			control::quit = true;
-		}
-	}
-}
+
