@@ -50,6 +50,7 @@ public:
 	std::string const windowTitle;
 	unsigned const windowWidth;
 	unsigned const windowHeight;
+	unsigned dt;
 
 	// objects overlapping with camera will be drawn
 	Rect camera;

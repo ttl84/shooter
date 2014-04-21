@@ -30,6 +30,7 @@ int main(int argc, char ** argv)
 		
 		frame_end = SDL_GetTicks();
 		dt += float(frame_end - frame_begin) / 1000.0;
+		state.dt = frame_end - frame_begin;
 	}
 	return 0;
 }

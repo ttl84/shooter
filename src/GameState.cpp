@@ -191,10 +191,16 @@ std::tuple<unsigned, unsigned> textCenter(std::string str, Font const & font)
 }
 void GameState::drawUI()
 {
-	std::stringstream oss;
-	oss << "score " << score;
-	drawText(*this, oss.str(), 0, 0);
-	
+	{
+		std::stringstream oss;
+		oss << "score " << score;
+		drawText(*this, oss.str(), 0, 0);
+	}
+	{
+		std::stringstream oss;
+		oss << "frame time " << this->dt;
+		drawText(*this, oss.str(), 0, font.getHeight());
+	}
 	if(dead)
 	{
 		std::string deadText("game over");
