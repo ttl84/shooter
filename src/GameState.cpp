@@ -18,7 +18,7 @@ spawnEnemyFunc2(GameState & state);
 void GameState::initFont()
 {
 	bool good;
-	std::tie(font, good) = loadFont("font.txt");
+	std::tie(font, good) = loadFont("font2.txt");
 	for(auto pair : font)
 	{
 		this->fontTextureMap.emplace(pair.first, pair.second.makeTexture(renderer));
@@ -193,12 +193,12 @@ void GameState::drawUI()
 {
 	{
 		std::stringstream oss;
-		oss << "score " << score;
+		oss << "score: " << score;
 		drawText(*this, oss.str(), 0, 0);
 	}
 	{
 		std::stringstream oss;
-		oss << "frame time " << this->dt;
+		oss << "frame time: " << this->dt;
 		drawText(*this, oss.str(), 0, font.getHeight());
 	}
 	if(dead)

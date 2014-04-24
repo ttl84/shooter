@@ -17,15 +17,32 @@ unsigned Font::getHeight() const
 	}
 	return 0;
 }
-static std::tuple<Image, bool> loadSymbol(StringObject * obj)
+static void loadSymbol(Font & font, Object * obj)
 {
-	if(obj == nullptr)
-		return std::make_tuple(Image(), false);
-	CharImg ci(obj->datum);
+	auto listObj = downcast<ListObject>(obj);
+	if(listObj == nullptr or listObj->datum.size() != 2)
+		return;
+
+	auto strObj0 = downcast<StringObject>(listObj->datum[0]);
+	auto strObj1 = downcast<StringObject>(listObj->datum[1]);
+	if(strObj0 == nullptr or strObj1 == nullptr)
+		return;
+
+	// load the pixel layout
+	CharImg ci(strObj1->datum);
+
+	// make the palette
 	Palette palette;
 	palette.emplace('#', Pixel{255, 255, 255, 255});
+
+	// colorkey
 	Pixel colorkey{0, 0, 0};
-	return std::make_tuple(Image(ci, palette, colorkey), true);
+
+	// finally make the image
+	Image img(ci, palette, colorkey);
+
+	// then insert into font
+	font.emplace(strObj0->datum[0], img);
 }
 std::tuple<Font, bool> loadFont(std::string filename)
 {
@@ -36,21 +53,15 @@ std::tuple<Font, bool> loadFont(std::string filename)
 		std::cerr << "unable to open font file " << filename << std::endl;
 		return std::make_tuple(font, false);
 	}
-	
 	FileReader reader(fileStream);
+
+	auto tableObject = reader.getList("table");
+	if(tableObject == nullptr)
+		return std::make_tuple(font, false);
 	
-	
-	for(char c : std::string("0123456789" "abcdefghijklmnopqrstuvwxyz" "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
+	for(auto obj : tableObject->datum)
 	{
-		std::string name("_");
-		name += c;
-		StringObject * bytesObject = reader.getString(name);
-		
-		Image img;
-		bool good;
-		std::tie(img, good) = loadSymbol(bytesObject);
-		if(good)
-			font.emplace(c, img);
+		loadSymbol(font, obj);
 	}
 	return std::make_tuple(font, true);
 }
