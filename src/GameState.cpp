@@ -43,6 +43,19 @@ void GameState::initSDL()
 	// video
 	window = SDL_CreateWindow(windowTitle.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, 0);
 	renderer = SDL_CreateRenderer(window, -1, 0);
+
+	// audio
+	Sound::getSpec("sound/checkspec.wav", &spec);
+	spec.userdata = &playbacks;
+	spec.callback = Sound::callback;
+	playbacks.format = spec.format;
+	spec.samples = 512;
+	dev = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr,0);
+	std::cout << "samples: " << spec.samples << '\n';
+	std::cout << "freq: " << spec.freq << '\n';
+	
+	if(dev != 0)
+		SDL_PauseAudioDevice(dev, 0);
 }
 void GameState::initPRG()
 {
@@ -73,6 +86,11 @@ GameState::~GameState()
 	renderer = nullptr;
 	SDL_DestroyWindow(window);
 	window = nullptr;
+	if(dev != 0)
+	{
+		SDL_PauseAudioDevice(dev, 0);
+		SDL_CloseAudioDevice(dev);
+	}
 	
 	SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER | SDL_INIT_AUDIO);
 	SDL_Quit();
@@ -129,9 +147,13 @@ Sound * GameState::loadSound(std::string path)
 {
 	if(soundMap.find(path) == soundMap.end())
 	{
-		soundMap[path] = new Sound(path);
+		soundMap[path] = new Sound(path, dev);
 	}
 	return soundMap[path];
+}
+void GameState::playSound(Sound * s)
+{
+	playbacks.play(s);
 }
 Font const & GameState::getFont()
 {
@@ -384,7 +406,8 @@ Gun player_gun(GameState & state)
 			};
 			
 			// play sound
-			state.loadSound("sound/laser.wav")->play();
+			auto sound = state.loadSound("sound/laser.wav");
+			state.playSound(sound);
 		};
 		entities.scheduleCreationJob(bulletCreationFunc);
 	};
@@ -423,6 +446,8 @@ Gun basic_gun(GameState & state)
 			
 			e.collision_effect[bullet] = [&](unsigned victim){
 				e.life[victim].value -= 1;
+				auto sound = state.loadSound("sound/hit.wav");
+				state.playSound(sound);
 			};
 			e.faction[bullet] = e.faction[gunner];
 		};

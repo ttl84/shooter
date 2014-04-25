@@ -1,50 +1,47 @@
 #include "Sound.h"
+#include <vector>
+#include <atomic>
+#include <iostream>
 void Sound::callback(void *userdata, Uint8 *stream, int len)
 {
-	Sound * s = (Sound*)userdata;
-	if (s->playback.pos >= s->len)
+	auto playbacks = (PlaybackList *) userdata;
+	SDL_memset(stream, 0, len);
+	playbacks->lock();
+	for(Playback & p : playbacks->playbacks)
 	{
-		s->stop();
-		return;
+		if(p.buf == nullptr)
+			continue;
+		unsigned left = p.pos + len > p.len ?  p.len - p.pos : len;
+		SDL_MixAudioFormat(stream, p.buf + p.pos, playbacks->format, left, SDL_MIX_MAXVOLUME);
+		
+		p.pos += left;
+		if(p.pos == p.len)
+			p = Playback{nullptr, 0, 0};
 	}
-	
-	if(s->playback.pos + len > s->len)
-		len = s->len - s->playback.pos;
-	SDL_memcpy (stream, s->buf.get() + s->playback.pos, len); 					// simply copy from one buffer into the other
-	//SDL_memset(stream, 0, len);
-	//SDL_MixAudioFormat(stream, s->buf.get() + s->playback.pos, s->spec.format, len, SDL_MIX_MAXVOLUME / 2);// mix from one buffer into another
-	
-	s->playback.pos += len;
+	playbacks->unlock();
 }
-Sound::Sound(std::string path):buf(nullptr, [](Uint8* ptr){SDL_FreeWAV(ptr);})
+Sound::Sound(std::string path, SDL_AudioDeviceID d)
+:	buf(nullptr, [](Uint8* ptr){SDL_FreeWAV(ptr);}),
+	dev(d)
 {
 	Uint8* tmpbuf;
 	good = SDL_LoadWAV(path.c_str(), &spec, &tmpbuf, &len) != nullptr;
 	buf.reset(tmpbuf);
 	
-	spec.callback = Sound::callback;
-	spec.userdata = this;
-	
-	dev = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr, SDL_AUDIO_ALLOW_ANY_CHANGE);
 }
 Sound::~Sound()
 {
-	SDL_PauseAudioDevice(dev, 1);
-	SDL_CloseAudioDevice(dev);
 }
-void Sound::play()
+Playback Sound::play()
 {
-	if(not good or dev == 0)
-		return;
-	stop();
-	playback.pos = 0;
-	
-	SDL_PauseAudioDevice(dev, 0);
+	return Playback{buf.get(), len, 0};
 }
-void Sound::stop()
+bool Sound::getSpec(std::string path, SDL_AudioSpec * spec)
 {
-	if(good and dev != 0)
-	{
-		SDL_PauseAudioDevice(dev, 1);
-	}
+	unsigned len;
+	Uint8 * buf;
+	bool good = SDL_LoadWAV(path.c_str(), spec, &buf, &len);
+	if(good)
+		SDL_FreeWAV(buf);
+	return good;
 }

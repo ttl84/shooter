@@ -16,7 +16,6 @@
 #include <unordered_map>
 
 
-
 class GameState{
 private:
 	float currentY;
@@ -33,11 +32,14 @@ private:
 
 	SDL_Renderer * renderer;
 	SDL_Window * window;
+	SDL_AudioDeviceID dev;
+	SDL_AudioSpec spec;
 	
 	Font font;
 	std::unordered_map<char, SDL_Texture*> fontTextureMap;
 	std::unordered_map<std::string, SDL_Texture*> textureMap;
 	std::unordered_map<std::string, Sound*> soundMap;
+	PlaybackList playbacks;
 	
 	KeyPress keyPress;
 	KeyBinding keyBinding;
@@ -89,6 +91,7 @@ public:
 	SDL_Texture * loadTexture(std::string name);
 	SDL_Texture * loadFontTexture(char c);
 	Sound * loadSound(std::string path);
+	void playSound(Sound * s);
 	
 	Font const & getFont();
 	
