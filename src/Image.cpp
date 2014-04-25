@@ -1,5 +1,4 @@
 #include "Image.h"
-#include "debug.h"
 static SDL_Surface * makeSurface(Image const & img)
 {
 	
@@ -32,7 +31,7 @@ SDL_Texture * Image::makeTexture(SDL_Renderer * renderer)
 {
 	if(not good)
 	{
-		debug::err << "image is not initialized" << std::endl;
+		std::cerr << "image is not initialized" << std::endl;
 		return nullptr;
 	}
 	SDL_Texture * texture = NULL;
@@ -44,6 +43,6 @@ SDL_Texture * Image::makeTexture(SDL_Renderer * renderer)
 		
 	}
 	else
-		debug::err << "unable to make surface" << std::endl;
+		std::cerr << "unable to make surface" << std::endl;
 	return texture;
 }

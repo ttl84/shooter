@@ -38,7 +38,7 @@ void GameState::initKey()
 void GameState::initSDL()
 {
 	// sdl systems
-	SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER);
+	SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER | SDL_INIT_AUDIO);
 	
 	// video
 	window = SDL_CreateWindow(windowTitle.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, 0);
@@ -74,7 +74,7 @@ GameState::~GameState()
 	SDL_DestroyWindow(window);
 	window = nullptr;
 	
-	SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER);
+	SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER | SDL_INIT_AUDIO);
 	SDL_Quit();
 }
 void GameState::reset()
@@ -124,6 +124,14 @@ SDL_Texture* GameState::loadFontTexture(char c)
 		return nullptr;
 	else
 		return it->second;
+}
+Sound * GameState::loadSound(std::string path)
+{
+	if(soundMap.find(path) == soundMap.end())
+	{
+		soundMap[path] = new Sound(path);
+	}
+	return soundMap[path];
 }
 Font const & GameState::getFont()
 {
@@ -375,7 +383,8 @@ Gun player_gun(GameState & state)
 				
 			};
 			
-			
+			// play sound
+			state.loadSound("sound/laser.wav")->play();
 		};
 		entities.scheduleCreationJob(bulletCreationFunc);
 	};

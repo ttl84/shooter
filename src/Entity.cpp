@@ -65,4 +65,3 @@ unsigned Entity::capacity(void) const
 	return MAX_ENTITIES;
 }
 }
-#include "ecs3.h"

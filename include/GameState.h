@@ -7,7 +7,7 @@
 
 #include "Font.h"
 #include "input.h"
-
+#include "Sound.h"
 #include "Entity.h"
 
 #include <deque>
@@ -37,6 +37,7 @@ private:
 	Font font;
 	std::unordered_map<char, SDL_Texture*> fontTextureMap;
 	std::unordered_map<std::string, SDL_Texture*> textureMap;
+	std::unordered_map<std::string, Sound*> soundMap;
 	
 	KeyPress keyPress;
 	KeyBinding keyBinding;
@@ -87,6 +88,8 @@ public:
 
 	SDL_Texture * loadTexture(std::string name);
 	SDL_Texture * loadFontTexture(char c);
+	Sound * loadSound(std::string path);
+	
 	Font const & getFont();
 	
 	SDL_Renderer * getRenderer()

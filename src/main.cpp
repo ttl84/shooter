@@ -3,7 +3,6 @@
 
 #include "GameState.h"
 #include "input.h"
-
 int main(int argc, char ** argv)
 {
 	float constexpr TIME_UNIT = 1.0 / 1000.0;
