@@ -1,4 +1,4 @@
-#include "font.h"
+#include "Font.h"
 #include "filereader/FileReader.h"
 #include <fstream>
 unsigned Font::getWidth() const
