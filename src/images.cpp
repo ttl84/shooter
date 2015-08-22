@@ -1,5 +1,5 @@
 #include "images.h"
-#include "filereader/FileReader.h"
+#include "FileReader.h"
 #include "debug.h"
 #include <fstream>
 static std::string makeImagePath(std::string name)

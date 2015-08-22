@@ -1,6 +1,6 @@
 #include "input.h"
 #include "SDL2/SDL.h"
-#include "filereader/FileReader.h"
+#include "FileReader.h"
 #include <iostream>
 #include <fstream>
 
