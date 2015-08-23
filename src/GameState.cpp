@@ -45,17 +45,8 @@ void GameState::initSDL()
 	renderer = SDL_CreateRenderer(window, -1, 0);
 
 	// audio
-	Sound::getSpec("sound/checkspec.wav", &spec);
-	spec.userdata = &playbacks;
-	spec.callback = Sound::callback;
-	playbacks.format = spec.format;
-	spec.samples = 512;
-	dev = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr,0);
-	std::cout << "samples: " << spec.samples << '\n';
-	std::cout << "freq: " << spec.freq << '\n';
-	
-	if(dev != 0)
-		SDL_PauseAudioDevice(dev, 0);
+	Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 1, 4096);
+	Mix_AllocateChannels(16);
 }
 void GameState::initPRG()
 {
@@ -84,14 +75,12 @@ GameState::~GameState()
 {
 	SDL_DestroyRenderer(renderer);
 	renderer = nullptr;
+
 	SDL_DestroyWindow(window);
 	window = nullptr;
-	if(dev != 0)
-	{
-		SDL_PauseAudioDevice(dev, 0);
-		SDL_CloseAudioDevice(dev);
-	}
 	
+	Mix_CloseAudio();
+
 	SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER | SDL_INIT_AUDIO);
 	SDL_Quit();
 }
@@ -143,17 +132,19 @@ SDL_Texture* GameState::loadFontTexture(char c)
 	else
 		return it->second;
 }
-Sound * GameState::loadSound(std::string path)
+Mix_Chunk * GameState::loadSound(std::string path)
 {
-	if(soundMap.find(path) == soundMap.end())
-	{
-		soundMap[path] = new Sound(path, dev);
-	}
-	return soundMap[path];
+	auto it = soundMap.find(path);
+	if(it != soundMap.end())
+		return it->second;
+	Mix_Chunk * chunk = Mix_LoadWAV(path.c_str());
+	if(chunk != nullptr)
+		soundMap[path] = chunk;
+	return chunk;
 }
-void GameState::playSound(Sound * s)
+void GameState::playSound(Mix_Chunk * chunk)
 {
-	playbacks.play(s);
+	Mix_PlayChannel(-1, chunk, 0);
 }
 Font const & GameState::getFont()
 {

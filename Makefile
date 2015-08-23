@@ -13,7 +13,7 @@ endif
 INCLUDE_FLAGS := -I"include" \
 	-I"../SDL2/include"
 
-LDFLAGS+=-L"../SDL2/lib" $(SDL2MAIN) -lSDL2 \
+LDFLAGS+=-L"../SDL2/lib" $(SDL2MAIN) -lSDL2 -lSDL2_mixer
 
 CFLAGS+=-std=c++11 -pedantic-errors -Wstrict-aliasing=0 -Wall -g -DDEBUG $(INCLUDE_FLAGS)
 

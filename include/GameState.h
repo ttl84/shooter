@@ -1,13 +1,13 @@
 #ifndef GameState_H
 #define GameState_H
 #include "SDL2/SDL.h"
+#include "SDL2/SDL_mixer.h"
 
 #include "Rect.h"
 #include "Vec2.h"
 
 #include "Font.h"
 #include "input.h"
-#include "Sound.h"
 #include "Entity.h"
 
 #include <deque>
@@ -20,7 +20,7 @@ class GameState{
 private:
 	float currentY;
 	float previousY;
-	float timeElapsed;
+//	float timeElapsed;
 	uint64_t score;
 	bool dead;
 
@@ -32,14 +32,11 @@ private:
 
 	SDL_Renderer * renderer;
 	SDL_Window * window;
-	SDL_AudioDeviceID dev;
-	SDL_AudioSpec spec;
 	
 	Font font;
 	std::unordered_map<char, SDL_Texture*> fontTextureMap;
 	std::unordered_map<std::string, SDL_Texture*> textureMap;
-	std::unordered_map<std::string, Sound*> soundMap;
-	PlaybackList playbacks;
+	std::unordered_map<std::string, Mix_Chunk*> soundMap;
 	
 	KeyPress keyPress;
 	KeyBinding keyBinding;
@@ -90,8 +87,8 @@ public:
 
 	SDL_Texture * loadTexture(std::string name);
 	SDL_Texture * loadFontTexture(char c);
-	Sound * loadSound(std::string path);
-	void playSound(Sound * s);
+	Mix_Chunk * loadSound(std::string path);
+	void playSound(Mix_Chunk * s);
 	
 	Font const & getFont();
 	
