@@ -32,6 +32,10 @@ $(BIN): $(OBJ)
 	$(CXX) $^ $(LDFLAGS) -o $(BIN)
 
 # Create the object files and dependency files from source files.
+# Modules can include their own public headers without full qualified name.
+# Example:
+# In src/A/A.cpp, #include "A.h"
+# In src/B/B.cpp, #include "A/A.h"
 %.o: %.cpp
 	$(CXX) $< $(CFLAGS) -I include -I $(subst src/, include/, $(dir $<)) -c -o $@ -MMD
 
