@@ -45,7 +45,11 @@ void GameState::initSDL()
 	renderer = SDL_CreateRenderer(window, -1, 0);
 
 	// audio
-	Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 1, 4096);
+	int samplingFreq = 44100;
+	unsigned soundFormat = AUDIO_U16LSB;
+	int channels = 2;
+	int chunkSize = 4096;
+	Mix_OpenAudio(samplingFreq, soundFormat, channels, chunkSize);
 	Mix_AllocateChannels(16);
 }
 void GameState::initPRG()
