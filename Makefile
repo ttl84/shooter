@@ -1,32 +1,42 @@
 #compile and link flags
 ifeq ($(OS), Windows_NT)
-	RM = del
 	BIN = a.exe
-	LDFLAGS += -lMingw32
-	SDL2MAIN:=-lSDL2main
+	LMINGW32:= -lMingw32
+	LSDL2MAIN:= -lSDL2main
 else
-	RM = rm
 	BIN = a.out
-	SDL2MAIN:=
 endif
-INCLUDE_FLAGS := -I"include"
+INCLUDE_FLAGS := -I include
 
-LDFLAGS+= $(SDL2MAIN) -lSDL2 -lSDL2_mixer
+LDFLAGS:= $(LMINGW32) $(LSDL2MAIN) -lSDL2 -lSDL2_mixer
 
-CFLAGS+=-std=c++11 -pedantic-errors -Wstrict-aliasing=0 -Wall -g -DDEBUG $(INCLUDE_FLAGS)
+CFLAGS+=-std=c++11 -pedantic-errors -Wstrict-aliasing=0 -Wall -g -DDEBUG
 
-#file names and directories
-DIR=src
-SRC=$(wildcard $(DIR:%=%/*.cpp))
-OBJ=$(SRC:.cpp=.o)
-DEP=$(SRC:.cpp=.d)
+# This is a list of modules of the project.
+# Modules are siblings, but may have inter module dependencies.
+# Inter module dependcy is done through the include files in include/$module/*.h
+MODULES:=main filereader
 
-#rules
+# Compile a list of sources files from the modules.
+# src/*/*.cpp
+SRC:=$(wildcard $(MODULES:%=src/%/*.cpp))
+
+# Each source file has a matching .d dependency file and an .o object file.
+DEP:=$(SRC:.cpp=.d)
+OBJ:=$(SRC:.cpp=.o)
+
+
+# Create the executable from object files.
+# Causes object files to be built.
 $(BIN): $(OBJ)
 	$(CXX) $^ $(LDFLAGS) -o $(BIN)
--include $(DEP)
+
+# Create the object files and dependency files from source files.
 %.o: %.cpp
-	$(CXX) $< $(CFLAGS) -c -o $@ -MMD -MP 
+	$(CXX) $< $(CFLAGS) -I include -I $(subst src/, include/, $(dir $<)) -c -o $@ -MMD
+
+# Include all the dependency files to invoke the object file rule.
+-include $(DEP)
 
 run: $(BIN)
 	$(BIN)
