@@ -1,4 +1,3 @@
-CC:=g++
 #compile and link flags
 ifeq ($(OS), Windows_NT)
 	RM = del
@@ -25,10 +24,10 @@ DEP=$(SRC:.cpp=.d)
 
 #rules
 $(BIN): $(OBJ)
-	$(CC) $^ $(LDFLAGS) -o $(BIN)
+	$(CXX) $^ $(LDFLAGS) -o $(BIN)
 -include $(DEP)
 %.o: %.cpp
-	$(CC) $< $(CFLAGS) -c -o $@ -MMD -MP 
+	$(CXX) $< $(CFLAGS) -c -o $@ -MMD -MP 
 
 run: $(BIN)
 	$(BIN)
