@@ -2,7 +2,7 @@
 #include "util/debug.h"
 #include "input.h"
 #include "Font.h"
-#include "image/images.h"
+#include "video/images.h"
 #include "systems.h"
 #include <ctime>
 #include <sstream>
