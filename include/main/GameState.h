@@ -6,7 +6,7 @@
 #include "Rect.h"
 #include "Vec2.h"
 
-#include "Font.h"
+#include "video/Font.h"
 #include "input.h"
 #include "Entity.h"
 

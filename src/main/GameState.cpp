@@ -1,7 +1,7 @@
 #include "GameState.h"
 #include "util/debug.h"
 #include "input.h"
-#include "Font.h"
+#include "video/Font.h"
 #include "video/images.h"
 #include "systems.h"
 #include <ctime>
