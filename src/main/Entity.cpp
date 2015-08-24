@@ -13,10 +13,6 @@ void Entity::reset()
 	for(auto & m : mask)
 		m = 0;
 }
-void Entity::scheduleCreationJob(std::function<void(Entity&, unsigned)> initFunc)
-{
-	creationQueue.push(initFunc);
-}
 unsigned Entity::claim()
 {
 	unsigned next;
@@ -41,6 +37,10 @@ unsigned Entity::claim()
 	timer[next].action = [](unsigned self){std::cerr << "missing timer function\n";};
 	return next;
 }
+void Entity::scheduleCreationJob(std::function<void(Entity&, unsigned)> initFunc)
+{
+	creationQueue.push(initFunc);
+}
 void Entity::executeCreationJobs()
 {
 	while(not creationQueue.empty())
@@ -49,6 +49,17 @@ void Entity::executeCreationJobs()
 		creationQueue.pop();
 		unsigned id = claim();
 		func(*this, id);
+	}
+}
+void Entity::schedule(std::function<void(Entity&)> func)
+{
+	taskQueue.push(func);
+}
+void Entity::execute()
+{
+	while(not taskQueue.empty()) {
+		taskQueue.front()(*this);
+		taskQueue.pop();
 	}
 }
 void Entity::remove(unsigned i)

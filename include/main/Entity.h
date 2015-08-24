@@ -13,6 +13,7 @@ namespace ecs{
 		unsigned myCount;
 		std::stack< unsigned > myHoles;
 		std::queue< std::function<void(Entity&, unsigned)> > creationQueue;
+		std::queue< std::function<void(Entity&)> > taskQueue;
 	public:
 		mask_t mask[MAX_ENTITIES];
 		Vec2 position[MAX_ENTITIES];
@@ -42,6 +43,8 @@ namespace ecs{
 		// modifiers
 		void scheduleCreationJob(std::function<void(Entity&, unsigned)> initFunc);
 		void executeCreationJobs();
+		void schedule(std::function<void(Entity&)> func);
+		void execute();
 	private:
 		unsigned claim();
 	public:
