@@ -9,7 +9,6 @@ void Entity::reset()
 {
 	myCount = 0;
 	myHoles = decltype(myHoles)();
-	creationQueue = decltype(creationQueue)();
 	for(auto & m : mask)
 		m = 0;
 }
@@ -19,9 +18,7 @@ unsigned Entity::claim()
 	if(myHoles.empty())
 	{
 		if(myCount == MAX_ENTITIES)
-		{
 			next = MAX_ENTITIES - 1;
-		}
 		else
 			next = myCount++;
 	}
@@ -36,31 +33,6 @@ unsigned Entity::claim()
 	life[next].deathAction = [](unsigned self){std::cerr << "missing death function\n";};
 	timer[next].action = [](unsigned self){std::cerr << "missing timer function\n";};
 	return next;
-}
-void Entity::scheduleCreationJob(std::function<void(Entity&, unsigned)> initFunc)
-{
-	creationQueue.push(initFunc);
-}
-void Entity::executeCreationJobs()
-{
-	while(not creationQueue.empty())
-	{
-		auto func = creationQueue.front();
-		creationQueue.pop();
-		unsigned id = claim();
-		func(*this, id);
-	}
-}
-void Entity::schedule(std::function<void(Entity&)> func)
-{
-	taskQueue.push(func);
-}
-void Entity::execute()
-{
-	while(not taskQueue.empty()) {
-		taskQueue.front()(*this);
-		taskQueue.pop();
-	}
 }
 void Entity::remove(unsigned i)
 {

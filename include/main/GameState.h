@@ -25,6 +25,7 @@ private:
 	bool dead;
 
 	ecs::Entity entities;
+	std::queue< std::function< void(ecs::Entity&) > > worldUpdateQueue;
 
 	std::deque<Vec2> stars;
 
@@ -123,6 +124,11 @@ public:
 	void update(float dt);
 	void draw();
 	void handleEvent();
+
+	void schedule(std::function< void(ecs::Entity&) > func);
+private:
+	void execute();
+public:
 };
 
 #endif
