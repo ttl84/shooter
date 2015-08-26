@@ -54,6 +54,14 @@ bool DB::write(std::ostream& out)
 {
 	return false;
 }
+unsigned DB::nRows() const
+{
+	return rows.size();
+}
+unsigned DB::nCols() const
+{
+	return schema.size();
+}
 std::vector<std::string>& DB::operator[](unsigned i)
 {
 	return rows[i];

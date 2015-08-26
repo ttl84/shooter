@@ -12,6 +12,9 @@ public:
 	bool read(std::istream& );
 	bool write(std::ostream& );
 
+	unsigned nRows() const;
+	unsigned nCols() const;
+	
 	RowT& operator[](unsigned i);
 	const RowT& operator[](unsigned i) const;
 
