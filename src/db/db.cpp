@@ -7,10 +7,31 @@ bool DB::read(std::istream& in)
 {
 	std::string word;
 	std::vector<std::string> row;
-	
+	bool escape = false;
 	for(std::istreambuf_iterator<char> it(in), end; it != end; ++it) {
 		char c = *it;
-		if(c == ' ' || c == '\t' || c == '\n') {
+		if(c == '\\') {
+			escape = true;
+			++it;
+			if(it != end) {
+				c = *it;
+			} else {
+				break;
+			}
+		} else {
+			escape = false;
+		}
+		if(c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+		} else if(escape) {
+			if(c == 't') {
+				word += '\t';
+			} else if(c == 's') {
+				word += ' ';
+			} else if(c == 'n') {
+				word += '\n';
+			} else {
+				word += c;
+			}
 		} else if(c == ',' || c == ';') {
 			row.push_back(std::move(word));
 			word.clear();
