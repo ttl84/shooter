@@ -15,7 +15,7 @@ CFLAGS+=-std=c++11 -pedantic-errors -Wstrict-aliasing=0 -Wall -g -DDEBUG
 # This is a list of modules of the project.
 # Modules are siblings, but may have inter module dependencies.
 # Inter module dependcy is done through the include files in include/$module/*.h
-MODULES:=main filereader video util
+MODULES:=main filereader db video util
 
 # Compile a list of sources files from the modules.
 # src/*/*.cpp

@@ -549,7 +549,7 @@ void update_camera(GameState & state)
 			float center_y = entities.position[i].y;
 			state.updateCurrentY(center_y);
 			float adjustment = entities.velocity[i].y + player_stat::normal_speed;
-			float multiplier = state.windowHeight * 0.95 / (player_stat::fast_speed - player_stat::slow_speed);
+			float multiplier = state.windowHeight * 0.65 / (player_stat::fast_speed - player_stat::slow_speed);
 			state.camera.setCenterY(floor(center_y - adjustment * multiplier));
 			return;
 		}
