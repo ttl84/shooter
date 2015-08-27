@@ -3,7 +3,7 @@
 #include <string>
 #include <iterator>
 
-bool DB::read(std::istream& in)
+bool DB::read(std::istream&& in)
 {
 	std::string word;
 	std::vector<std::string> row;

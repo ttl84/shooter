@@ -6,9 +6,9 @@ ifeq ($(OS), Windows_NT)
 else
 	BIN = a.out
 endif
-INCLUDE_FLAGS := -I include
+INCLUDE_FLAGS:=-I include
 
-LDFLAGS:= $(LMINGW32) $(LSDL2MAIN) -lSDL2 -lSDL2_mixer
+LDFLAGS:=$(LMINGW32) $(LSDL2MAIN) -lSDL2 -lSDL2_mixer
 
 CFLAGS+=-std=c++11 -pedantic-errors -Wstrict-aliasing=0 -Wall -g -DDEBUG
 
@@ -24,12 +24,16 @@ SRC:=$(wildcard $(MODULES:%=src/%/*.cpp))
 # Each source file has a matching .d dependency file and an .o object file.
 DEP:=$(SRC:.cpp=.d)
 OBJ:=$(SRC:.cpp=.o)
-
+TESTOBJ:=$(MODULES:%=src/%/test.o)
 
 # Create the executable from object files.
 # Causes object files to be built.
-$(BIN): $(OBJ)
+$(BIN): $(filter-out $(TESTOBJ), $(OBJ))
 	$(CXX) $^ $(LDFLAGS) -o $(BIN)
+
+# Create the test programs
+%.test: $(filter-out src/main/main.o $(filter-out src/%/test.o, $(TESTOBJ)) , $(OBJ))
+	$(CXX) $^ $(LDFLAGS) -o $@
 
 # Create the object files and dependency files from source files.
 # Modules can include their own public headers without full qualified name.

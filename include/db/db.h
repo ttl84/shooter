@@ -9,11 +9,12 @@ class DB{
 	std::vector<std::string> schema;
 	std::vector<std::vector<std::string>> rows;
 public:
-	bool read(std::istream& );
+	bool read(std::istream&& );
 	bool write(std::ostream& );
 
 	unsigned nRows() const;
 	unsigned nCols() const;
+	const RowT & getSchema() const;
 	
 	RowT& operator[](unsigned i);
 	const RowT& operator[](unsigned i) const;

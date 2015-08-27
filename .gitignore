@@ -24,4 +24,4 @@
 *.swp
 
 # emacs backup
-*.*~
+*~
