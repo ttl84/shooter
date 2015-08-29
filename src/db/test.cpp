@@ -11,6 +11,12 @@ int main()
 			std::cout << col << ", ";
 		}
 		std::cout << ";\n";
+		int a;
+		std::string b;
+		double c;
+		char d;
+		row.parse(a, b, c, d);
+		std::cout << a << ',' << b << ',' << c << ',' << d << "\n";
 	}
 	return 0;
 }

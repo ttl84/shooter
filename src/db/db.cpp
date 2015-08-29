@@ -20,9 +20,14 @@ bool DB::read(std::istream &in)
 			if(schema.empty()) {
 				std::swap(schema, row);
 			} else if(row.size() == schema.size()){
-				rows.push_back(std::move(row));
+				rows.emplace_back(std::move(row));
+				row.clear();
 			} else {
+				std::cerr << "row " << rows.size() << " of db does not match schema\n";
+				row.clear();
 			}
+		} else if(token.type == Type::err) {
+			std::cerr << "error token encountered: " << token.text << '\n';
 		}
 	}
 	return !schema.empty();
@@ -40,11 +45,11 @@ unsigned DB::nCols() const
 {
 	return schema.size();
 }
-std::vector<std::string>& DB::operator[](unsigned i)
+RowT& DB::operator[](unsigned i)
 {
 	return rows[i];
 }
-const std::vector<std::string>& DB::operator[](unsigned i) const
+const RowT& DB::operator[](unsigned i) const
 {
 	return rows[i];
 }
