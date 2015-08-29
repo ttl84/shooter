@@ -3,8 +3,10 @@
 #include "Char.h"
 #include <string>
 #include <ostream>
+
+namespace fr{
 struct Token final{
-	enum class Type : uint8_t{
+	enum class Type {
 		INTEGER, REAL, BOOLEAN, IDENTIFIER, STRING,
 		BEGIN_LIST, END_LIST,
 		ASSIGNMENT,
@@ -25,4 +27,5 @@ struct Token final{
 	Token():Token(Type::ERROR){}
 };
 std::ostream& operator<<(std::ostream& os, const Token& obj);
+} // end namespace fr
 #endif

@@ -3,9 +3,10 @@
 #include <iostream>
 int main()
 {
-	DB db;
-	db.read(std::ifstream("test/db/input"));
-	for(auto & row : db) {
+	db::DB database;
+	std::ifstream is("test/db/input");
+	database.read(is);
+	for(auto & row : database) {
 		for(auto & col : row) {
 			std::cout << col << ", ";
 		}

@@ -2,7 +2,7 @@
 #include <sstream>
 #include <iostream>
 
-namespace{
+namespace fr{
 bool isEnd(Char const & ch)
 {
 	return ch.end;
@@ -291,7 +291,7 @@ Token readToken(CharStream & cs)
 	else
 		return readError(cs);
 }
-}//end namespace
+
 Token TokenStream::get(void)
 {
 	Token token = nextToken;
@@ -321,3 +321,4 @@ TokenStream::operator bool(void) const
 {
 	return (not eof()) and (not bad());
 }
+} // end namespace fr

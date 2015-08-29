@@ -1,4 +1,5 @@
 #include "Token.h"
+namespace fr{
 std::ostream& operator<<(std::ostream& os, Token::Type type)
 {
 	#define MAKE_CASE(t) case Token::Type:: t : return os << #t
@@ -24,3 +25,4 @@ std::ostream& operator<<(std::ostream& os, const Token& obj)
 	os << "TOKEN<" << obj.type << ", '" << obj.lexeme << "'>";
 	return os;
 }
+} // end namespace fr

@@ -4,7 +4,7 @@ ifeq ($(OS), Windows_NT)
 	LMINGW32:= -lMingw32
 	LSDL2MAIN:= -lSDL2main
 else
-	BIN = a.out
+	BIN = bin/a.out
 endif
 INCLUDE_FLAGS:=-I include
 
@@ -33,7 +33,7 @@ $(BIN): $(filter-out $(TESTOBJ), $(OBJ))
 
 # Create the test programs
 %.test: $(filter-out src/main/main.o $(filter-out src/%/test.o, $(TESTOBJ)) , $(OBJ))
-	$(CXX) $^ $(LDFLAGS) -o $@
+	$(CXX) $^ $(LDFLAGS) -o bin/$@
 
 # Create the object files and dependency files from source files.
 # Modules can include their own public headers without full qualified name.

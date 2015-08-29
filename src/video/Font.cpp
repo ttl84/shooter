@@ -53,7 +53,7 @@ std::tuple<Font, bool> loadFont(std::string filename)
 		std::cerr << "unable to open font file " << filename << std::endl;
 		return std::make_tuple(font, false);
 	}
-	FileReader reader(fileStream);
+	fr::FileReader reader(fileStream);
 
 	auto tableObject = reader.getList("table");
 	if(tableObject == nullptr)

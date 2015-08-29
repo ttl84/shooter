@@ -93,7 +93,7 @@ std::tuple<Image, bool> loadImage(std::string name)
 		debug::err << "unable to open file [" << path << "]\n";
 		return std::make_tuple(Image(), false);
 	}
-	FileReader reader(fileStream);
+	fr::FileReader reader(fileStream);
 	
 
 	StringObject * bytesObject = reader.getString("bytes");

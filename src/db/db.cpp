@@ -2,49 +2,27 @@
 #include <vector>
 #include <string>
 #include <iterator>
-
-bool DB::read(std::istream&& in)
+#include "token_stream.h"
+namespace db{
+bool DB::read(std::istream &in)
 {
-	std::string word;
 	std::vector<std::string> row;
-	bool escape = false;
-	for(std::istreambuf_iterator<char> it(in), end; it != end; ++it) {
-		char c = *it;
-		if(c == '\\') {
-			escape = true;
-			++it;
-			if(it != end) {
-				c = *it;
-			} else {
-				break;
-			}
-		} else {
-			escape = false;
-		}
-		if(c == ' ' || c == '\t' || c == '\n' || c == '\r') {
-		} else if(escape) {
-			if(c == 't') {
-				word += '\t';
-			} else if(c == 's') {
-				word += ' ';
-			} else if(c == 'n') {
-				word += '\n';
-			} else {
-				word += c;
-			}
-		} else if(c == ',' || c == ';') {
+	std::string word;
+
+	TokenStream<std::istreambuf_iterator<char>> stream(in);
+	for(auto & token : stream) {
+		if(token.type == Type::word) {
+			word += token.text;
+		} else if(token.type == Type::col) {
 			row.push_back(std::move(word));
-			word.clear();
-			if(c == ';') {
-				if(schema.empty()) {
-					std::swap(schema, row);
-				}
-				if(schema.size() == row.size()) {
-					rows.push_back(std::move(row));
-				}
+		} else if(token.type == Type::row) {
+			row.push_back(std::move(word));
+			if(schema.empty()) {
+				std::swap(schema, row);
+			} else if(row.size() == schema.size()){
+				rows.push_back(std::move(row));
+			} else {
 			}
-		} else {
-			word += c;
 		}
 	}
 	return !schema.empty();
@@ -86,4 +64,6 @@ DB::TableT::const_iterator DB::end() const
 {
 	return rows.end();
 }
+	
+} // namespace db
 

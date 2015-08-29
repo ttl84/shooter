@@ -2,6 +2,7 @@
 #define TokenStream_H
 #include "CharStream.h"
 #include "Token.h"
+namespace fr{
 class TokenStream{
 private:
 	CharStream & cs;
@@ -17,4 +18,5 @@ public:
 	bool eof(void) const;
 	operator bool(void) const;
 };
+} // end namespace fr
 #endif

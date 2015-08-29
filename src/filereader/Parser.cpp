@@ -9,10 +9,12 @@
 #include <stack>
 #include <cassert>
 #include <iostream>
+
+namespace fr{
 namespace NonTerminal{
 	typedef Token::Type Type;
 	static const std::vector<Type> EXPR{Type::INTEGER, Type::REAL, Type::BOOLEAN, Type::STRING, Type::IDENTIFIER, Type::BEGIN_LIST};
-}
+} // end namespace fr
 class Parser{
 	
 	struct StackItem{
@@ -234,3 +236,4 @@ void parse(TokenStream & ts, ObjectTable & table, ObjectPool & pool)
 {
 	Parser(ts, table, pool).run();
 }
+} // end namespace fr

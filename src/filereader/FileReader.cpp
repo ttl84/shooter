@@ -3,6 +3,7 @@
 #include <memory>
 #include "TokenStream.h"
 #include "Parser.h"
+namespace fr{
 FileReader::FileReader(std::istream & is)
 {
 	CharStream cs(is);
@@ -38,3 +39,4 @@ ListObject * FileReader::getList(std::string key)
 {
 	return downcast<ListObject>(get(key));
 }
+} // end namespace fr

@@ -16,6 +16,8 @@
 *.exe
 *.out
 *.app
+*.test
+bin/
 
 # Dependencies
 *.d

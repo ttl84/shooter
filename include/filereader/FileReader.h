@@ -7,6 +7,7 @@
 #include <istream>
 
 #include "Object.h"
+namespace fr{
 class FileReader{
 private:
 	std::map<std::string, Object *> data;
@@ -21,4 +22,5 @@ public:
 	BooleanObject * getBoolean(std::string key);
 	ListObject * getList(std::string key);
 };
+} // end namespace fr
 #endif

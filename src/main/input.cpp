@@ -103,25 +103,25 @@ static bool strToKeycode(std::string name, SDL_Keycode & output)
 void loadKeyBinding(std::string filename, KeyBinding & keyBinding)
 {
 	std::ifstream is(filename);
-	FileReader fr(is);
+	fr::FileReader reader(is);
 	
-	auto obj = fr.getString("faster");
+	auto obj = reader.getString("faster");
 	if(obj != nullptr)
 		strToKeycode(obj->datum, keyBinding.faster);
 	
-	obj = fr.getString("slower");
+	obj = reader.getString("slower");
 	if(obj != nullptr)
 		strToKeycode(obj->datum, keyBinding.slower);
 	
-	obj = fr.getString("left");
+	obj = reader.getString("left");
 	if(obj != nullptr)
 		strToKeycode(obj->datum, keyBinding.left);
 	
-	obj = fr.getString("right");
+	obj = reader.getString("right");
 	if(obj != nullptr)
 		strToKeycode(obj->datum, keyBinding.right);
 	
-	obj = fr.getString("fire");
+	obj = reader.getString("fire");
 	if(obj != nullptr)
 		strToKeycode(obj->datum, keyBinding.fire);
 }

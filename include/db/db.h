@@ -3,13 +3,14 @@
 #include <vector>
 #include <string>
 #include <iostream>
+namespace db{
 class DB{
 	typedef std::vector<std::string> RowT;
 	typedef std::vector<RowT> TableT;
 	std::vector<std::string> schema;
 	std::vector<std::vector<std::string>> rows;
 public:
-	bool read(std::istream&& );
+	bool read(std::istream&);
 	bool write(std::ostream& );
 
 	unsigned nRows() const;
@@ -24,5 +25,6 @@ public:
 	TableT::const_iterator begin() const;
 	TableT::const_iterator end() const;
 };
+} // end namespace db
 #endif
 
