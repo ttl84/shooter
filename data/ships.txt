@@ -1,0 +1,3 @@
+name,		max_speed,	min_speed,	accel,	max_speed_ang,	min_speed_ang,	accel_ang;
+player,		200,		50,		125,	150,		50,		1000;
+enemy1,		50,		20,		30,	10,		10,		200;

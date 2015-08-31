@@ -1,4 +1,4 @@
-#include "input.h"
+#include "keyboard.h"
 #include "SDL2/SDL.h"
 #include "filereader/FileReader.h"
 #include <iostream>
@@ -100,29 +100,86 @@ static bool strToKeycode(std::string name, SDL_Keycode & output)
 	#undef BEGIN_CASE
 	#undef END_CASE
 }
-void loadKeyBinding(std::string filename, KeyBinding & keyBinding)
+KeyBinding::KeyBinding(char const * path)
 {
-	std::ifstream is(filename);
+	std::ifstream is(path);
 	fr::FileReader reader(is);
 	
+	auto obj = reader.getString("reset");
+	if(obj != nullptr)
+		strToKeycode(obj->datum, reset);
+
 	auto obj = reader.getString("faster");
 	if(obj != nullptr)
-		strToKeycode(obj->datum, keyBinding.faster);
+		strToKeycode(obj->datum, faster);
 	
 	obj = reader.getString("slower");
 	if(obj != nullptr)
-		strToKeycode(obj->datum, keyBinding.slower);
+		strToKeycode(obj->datum, slower);
 	
 	obj = reader.getString("left");
 	if(obj != nullptr)
-		strToKeycode(obj->datum, keyBinding.left);
+		strToKeycode(obj->datum, left);
 	
 	obj = reader.getString("right");
 	if(obj != nullptr)
-		strToKeycode(obj->datum, keyBinding.right);
+		strToKeycode(obj->datum, right);
 	
 	obj = reader.getString("fire");
 	if(obj != nullptr)
-		strToKeycode(obj->datum, keyBinding.fire);
+		strToKeycode(obj->datum, shoot);
 }
 
+Keyboard::Keyboard()
+{
+	SDL_InitSubSystem(SDL_INIT_EVENTS);
+}
+
+Keyboard::~Keyboard()
+{
+	SDL_QuitSubSystem(SDL_INIT_EVENTS);
+}
+
+void Keyboard::update()
+{
+	keyPress.any = false;
+	SDL_Event e;
+	while(SDL_PollEvent(&e))
+	{
+		if(e.type == SDL_KEYDOWN)
+		{
+			keyPress.any = true;
+			SDL_Keycode symbol = e.key.keysym.sym;
+			if(symbol == keyBinding.faster)
+				keyPress.faster = true;
+			else if(symbol == keyBinding.slower)
+				keyPress.slower = true;
+			else if(symbol == keyBinding.left)
+				keyPress.left = true;
+			else if(symbol == keyBinding.right)
+				keyPress.right = true;
+			else if(symbol == keyBinding.fire)
+				keyPress.fire = true;
+			else if(symbol == SDLK_ESCAPE)
+				keyPress.quit = true;
+		}
+		else if(e.type == SDL_KEYUP)
+		{
+			SDL_Keycode symbol = e.key.keysym.sym;
+			if(symbol == keyBinding.faster)
+				keyPress.faster = false;
+			else if(symbol == keyBinding.slower)
+				keyPress.slower = false;
+			else if(symbol == keyBinding.left)
+				keyPress.left = false;
+			else if(symbol == keyBinding.right)
+				keyPress.right = false;
+			else if(symbol == keyBinding.fire)
+				keyPress.fire = false;
+		}
+		else if(e.type == SDL_QUIT)
+		{
+			keyPress.quit = true;
+		}
+	}
+}

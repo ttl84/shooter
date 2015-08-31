@@ -12,23 +12,6 @@ void thinkSystem(Entity & e)
 		e.think_function[i](i);
 }
 
-void shootSystem(Entity & e, float dt)
-{
-	for(auto i : e.select(shooter_mask))
-	{
-		// guns have a wait_time to wait before they can fire again
-		if(e.gun[i].wait_time > 0)
-			e.gun[i].wait_time -= dt;
-		
-		// spawn bullet if gun is ready
-		if(e.gun[i].fire and e.gun[i].wait_time <= 0)
-		{
-			e.gun[i].wait_time += e.gun[i].delay;
-			e.gun[i].gun_function(i);
-		}
-	}
-}
-
 void accelSystem(Entity & e, float dt)
 {
 	for(auto i : e.select(accel_mask))

@@ -1,134 +1,52 @@
 #ifndef GameState_H
 #define GameState_H
-#include "SDL2/SDL.h"
-#include "SDL2/SDL_mixer.h"
 
-#include "Rect.h"
-#include "Vec2.h"
+#include "math/Rect.h"
+#include "math/Vec2.h"
 
-#include "video/Font.h"
-#include "input.h"
+#include "video/video.h"
+#include "audio/audio.h"
+#include "keyboard/keyboard.h"
 #include "Entity.h"
+#include "stats.h"
 
 #include <deque>
 #include <string>
 #include <random>
 #include <unordered_map>
 
-
-class GameState{
-private:
+// Game keeps all the data related to the rules of the game
+struct Game{
+	unsigned dt;
 	float currentY;
 	float previousY;
-//	float timeElapsed;
+	float timeElapsed;
 	uint64_t score;
 	bool dead;
-
-	ecs::Entity entities;
-	std::queue< std::function< void(ecs::Entity&) > > worldUpdateQueue;
-
-	std::deque<Vec2> stars;
-
+	
 	std::mt19937 PRG, starPRG, enemySpawnPRG;
-
-	SDL_Renderer * renderer;
-	SDL_Window * window;
-	
-	Font font;
-	std::unordered_map<char, SDL_Texture*> fontTextureMap;
-	std::unordered_map<std::string, SDL_Texture*> textureMap;
-	std::unordered_map<std::string, Mix_Chunk*> soundMap;
-	
-	KeyPress keyPress;
-	KeyBinding keyBinding;
-
-	void initFont();
-	void initKey();
-	void initSDL();
-	void initPRG();
-	
-public:
-	std::string const windowTitle;
-	unsigned const windowWidth;
-	unsigned const windowHeight;
-	unsigned dt;
-
-	// objects overlapping with camera will be drawn
-	Rect camera;
-
-	// anything outside of bounds will be destroyed, and the edges are spawn points
 	Rect bounds;
+};
 
-	
-	
-	// set the center of the camera
-	void centerCamera(Vec2 center);
+// world keeps all the game objects
+struct World{
+	std::unordered_map<std::string, Stat> stats;
+	std::deque<Vec2> stars;
+	ecs::Entity entities;
 
-	// set the center of the bounds
-	void updateBounds(Vec2 center);
-
-	// keeping track of progress
-	void updateCurrentY(float);
-	float getDistanceTravelled() const;
-	float getTotalDistance() const;
-	decltype(score) getScore() const;
-
-	void enemyKill();
-	void enemyHit();
-	void playerDie();
-
-	
-	
-	void reset();
-	
-	GameState(std::string title, unsigned width, unsigned height);
-	~GameState();
-	GameState(GameState const & other) = delete;
-	GameState & operator = (GameState const & other) = delete;
-
-	SDL_Texture * loadTexture(std::string name);
-	SDL_Texture * loadFontTexture(char c);
-	Mix_Chunk * loadSound(std::string path);
-	void playSound(Mix_Chunk * s);
-	
-	Font const & getFont();
-	
-	SDL_Renderer * getRenderer()
-	{
-		return renderer;
-	}
-	SDL_Window * getWindow()
-	{
-		return window;
-	}
-	KeyPress const & getKeyPress()
-	{
-		return keyPress;
-	}
-	ecs::Entity & getEntities()
-	{
-		return entities;
-	}
-	float randFloat(float low, float high)
-	{
-		return std::uniform_real_distribution<float>(low, high)(PRG);
-	}
-	float randEnemySpawn()
-	{
-		return std::generate_canonical<float, 32>(enemySpawnPRG);
-	}
-
-	void drawUI();
-	void updateStars();
-	void drawStars();
-	void update(float dt);
-	void draw();
-	void handleEvent();
-
+	std::queue< std::function< void(ecs::Entity&) > > worldUpdateQueue;
 	void schedule(std::function< void(ecs::Entity&) > func);
-private:
 	void execute();
-public:
+};
+
+// All state of the program
+class State{
+	Game game;
+	World world;
+	Audio audio;
+	Video video;
+	Window * window;
+	Keyboard keyboard;
 };
 
 #endif

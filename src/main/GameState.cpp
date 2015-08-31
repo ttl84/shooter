@@ -1,12 +1,13 @@
 #include "GameState.h"
 #include "util/debug.h"
-#include "input.h"
+#include "keyboard/keyboard.h"
 #include "video/Font.h"
 #include "video/images.h"
 #include "systems.h"
+#include "stats.h"
 #include <ctime>
 #include <sstream>
-
+/*
 namespace player_stat{
 	float fast_speed = 200;
 	float slow_speed = 50;
@@ -14,7 +15,8 @@ namespace player_stat{
 	float forward_accel = 150;
 	float backward_accel = 50;
 	float side_accel = 1000;
-}
+}*/
+/*
 Gun player_gun(GameState & state)
 {
 	Gun g;
@@ -108,75 +110,64 @@ Gun basic_gun(GameState & state)
 	g.fire = true;
 	return g;
 }
-void keyboard_control(GameState & state, unsigned i)
+*/
+// cap ship values to its physical limits
+void ship_constraint(GameState & state, unsigned i)
 {
-	auto & entities = state.getEntities();
-	auto & keyPress = state.getKeyPress();
-	float speed = entities.velocity[i].norm();
-	
-	// makes sure player  doesn't move backwards
-	if(fabs(entities.velocity[i].y) > player_stat::fast_speed)
-		entities.velocity[i].y = player_stat::fast_speed * -1;
-	if(fabs(entities.velocity[i].y) < player_stat::slow_speed)
-		entities.velocity[i].y = player_stat::slow_speed * -1;
-	
-	
-	if(keyPress.faster)
-	{
-		if(speed < player_stat::fast_speed)
-			entities.acceleration[i].y = -player_stat::forward_accel;
-		else
-			entities.acceleration[i].y = 0;
-	}
-	else if(keyPress.slower)
-	{
-		if(speed > player_stat::slow_speed)
-			entities.acceleration[i].y = player_stat::backward_accel;
-		else
-			entities.acceleration[i].y = 0;
-	}
-	else
-	{
-		entities.acceleration[i].y = 0;
-	}
-	
-	if(keyPress.left)
-	{
-		entities.acceleration[i].x = -player_stat::side_accel;
-	}
-	else if(keyPress.right)
-	{
-		entities.acceleration[i].x = player_stat::side_accel;
-	}
-	else
-	{
-		entities.acceleration[i].x = -2 * entities.velocity[i].x;
-	}
-	
-	float forwardAngle = Vec2(0, -1).angle();
-	float velocityAngle = entities.velocity[i].angle();
-	float diffAngle = velocityAngle -  forwardAngle;
-	entities.direction[i] = forwardAngle + diffAngle / 4;
-	if(keyPress.fire)
-	{
-		entities.gun[i].fire = true;
-	}
-	else
-	{
-		entities.gun[i].fire = false;
-	}
-	
+	Entity & e = state.getEntities();
+	ShipStats const * stats = e.shipstats[i];
+
+	float speed = e.velocity[i].norm();
+	if(speed > stats->max_speed)
+		e.velocity[i] *= (stats->max_speed / speed);
+	else if(speed < stats.min_speed)
+		e.velocity[i] *= (stats->min_speed / speed);
+
+	float speed_ang = e.speed_ang[i];
+	if(speed_ang > stats->max_speed_ang)
+		e.speed_ang[i] = stats->max_speed_ang;
+	else if(speed_ang < stats->min_speed_ang)
+		e.speed_ang[i] = stats->min_speed_ang;
 }
 
-void GameState::initFont()
+// does what the ship wants
+void ship_control(GameState & state, unsigned i)
 {
-	bool good;
-	std::tie(font, good) = loadFont("font2.txt");
-	for(auto pair : font)
-	{
-		this->fontTextureMap.emplace(pair.first, pair.second.makeTexture(renderer));
+	Entity & e = state.getEntities();
+	ShipBrain const & brain = e.ship_brain[i];
+	ShipStats const * stats = e.ship_stats[i];
+
+	
+	if(brain.accel) {
+		Vec2 accel(0, -stats->.accel);
+		accel.rotate(e.direction[i]);
+		e.accel[i] = accel;
+	} else {
+		e.accel[i] = Vec2(0,0);
 	}
+
+	e.accel_ang[i] = 0;
+	if(brain.turn_right)
+		e.accel_ang[i] += stats->accel_ang; 
+	if(brain.turn_left)
+		e.accel_ang[i] -= stats->accel_ang;
+
+	
+		
 }
+// use keyboard inputs to change brain state
+void keyboard_think(GameState & state, unsigned i)
+{
+	auto & e = state.getEntities();
+	auto & keyPress = state.getKeyPress();
+	ShipBrain & brain = e.ship_brain[i];
+
+	brain.accel = keyPress.faster;
+	brain.turn_left = keyPress.left;
+	brain.turn_right = keyPress.right;
+	brain.shoot = keyPress.fire;
+}
+
 void GameState::initKey()
 {
 	keyPress = KeyPress{0};
@@ -188,23 +179,7 @@ void GameState::initKey()
 	keyBinding.fire = SDLK_z;
 	loadKeyBinding("config.txt", keyBinding);
 }
-void GameState::initSDL()
-{
-	// sdl systems
-	SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER | SDL_INIT_AUDIO);
-	
-	// video
-	window = SDL_CreateWindow(windowTitle.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowWidth, windowHeight, 0);
-	renderer = SDL_CreateRenderer(window, -1, 0);
 
-	// audio
-	int samplingFreq = 22050;
-	unsigned soundFormat = AUDIO_S8;
-	int channels = 2;
-	int chunkSize = 2048;
-	Mix_OpenAudio(samplingFreq, soundFormat, channels, chunkSize);
-	Mix_AllocateChannels(16);
-}
 void GameState::initPRG()
 {
 	uint64_t seed;
@@ -329,20 +304,7 @@ SDL_Texture* GameState::loadFontTexture(char c)
 	else
 		return it->second;
 }
-Mix_Chunk * GameState::loadSound(std::string path)
-{
-	auto it = soundMap.find(path);
-	if(it != soundMap.end())
-		return it->second;
-	Mix_Chunk * chunk = Mix_LoadWAV(path.c_str());
-	if(chunk != nullptr)
-		soundMap[path] = chunk;
-	return chunk;
-}
-void GameState::playSound(Mix_Chunk * chunk)
-{
-	Mix_PlayChannel(-1, chunk, 0);
-}
+
 Font const & GameState::getFont()
 {
 	return font;
@@ -646,49 +608,7 @@ void GameState::draw()
 	drawUI();
 	SDL_RenderPresent(renderer);
 }
-void GameState::handleEvent()
-{
-	keyPress.any = false;
-	SDL_Event e;
-	while(SDL_PollEvent(&e))
-	{
-		if(e.type == SDL_KEYDOWN)
-		{
-			keyPress.any = true;
-			SDL_Keycode symbol = e.key.keysym.sym;
-			if(symbol == keyBinding.faster)
-				keyPress.faster = true;
-			else if(symbol == keyBinding.slower)
-				keyPress.slower = true;
-			else if(symbol == keyBinding.left)
-				keyPress.left = true;
-			else if(symbol == keyBinding.right)
-				keyPress.right = true;
-			else if(symbol == keyBinding.fire)
-				keyPress.fire = true;
-			else if(symbol == SDLK_ESCAPE)
-				keyPress.quit = true;
-		}
-		else if(e.type == SDL_KEYUP)
-		{
-			SDL_Keycode symbol = e.key.keysym.sym;
-			if(symbol == keyBinding.faster)
-				keyPress.faster = false;
-			else if(symbol == keyBinding.slower)
-				keyPress.slower = false;
-			else if(symbol == keyBinding.left)
-				keyPress.left = false;
-			else if(symbol == keyBinding.right)
-				keyPress.right = false;
-			else if(symbol == keyBinding.fire)
-				keyPress.fire = false;
-		}
-		else if(e.type == SDL_QUIT)
-		{
-			keyPress.quit = true;
-		}
-	}
-}
+
 
 void GameState::schedule(std::function< void(ecs::Entity&) > func)
 {

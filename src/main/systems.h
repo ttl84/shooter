@@ -4,7 +4,6 @@
 #include "Rect.h"
 #include "SDL2/SDL.h"
 void thinkSystem(ecs::Entity & e);
-void shootSystem(ecs::Entity & e, float dt);
 void accelSystem(ecs::Entity & e, float dt);
 
 void moveSystem(ecs::Entity & e, float dt);

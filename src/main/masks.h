@@ -19,29 +19,11 @@ namespace ecs{
 		return ((mask_t)(1 << (unsigned) head)) | combine(tail...);
 	}
 	
-	template<class R, class T>
-	R foldl(R(*proc)(R, T), R first, T second)
-	{
-		return proc(first, second);
-	}
-	template<class R, class T, class... Ts>
-	R foldl(R(*proc)(R, T), R first, T second, Ts ... args)
-	{
-		return foldl(proc, proc(first, second), args...);
-	}
-	
-
 	// checks if a mask satifies constant mask
 	template<mask_t sub>
 	bool accepts(mask_t mask)
 	{
 		return (mask & sub) == sub;
-	}
-	// checks if a mask satifies components
-	template<Component... components>
-	bool accepts(mask_t mask)
-	{
-		return accepts< combine(components...) >(mask);
 	}
 	
 	mask_t constexpr move_mask = combine(
@@ -64,8 +46,8 @@ namespace ecs{
 	mask_t constexpr shooter_mask = combine(
 		Component::POSITION,
 		Component::DIRECTION,
-		Component::SIZE,
-		Component::GUN);
+		Component::SIZE
+		);
 	
 	mask_t constexpr player_mask = combine(
 		move_mask,
@@ -74,8 +56,8 @@ namespace ecs{
 		collision_effect_mask,
 		Component::IMAGE,
 		Component::LIFE,
-		Component::THINK,
-		Component::CAMERA_FOCUS);
+		Component::THINK
+		);
 	
 	mask_t constexpr enemy_mask = combine(
 		move_mask,
@@ -88,8 +70,7 @@ namespace ecs{
 		move_mask, 
 		collision_effect_mask, 
 		Component::DIRECTION,
-		Component::IMAGE, 
-		Component::TIMER, 
+		Component::IMAGE,
 		Component::LIFE);
 }
 #endif

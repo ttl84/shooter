@@ -1,5 +1,5 @@
-#ifndef font_H
-#define font_H
+#ifndef FONT_H
+#define FONT_H
 #include "video/Image.h"
 #include <string>
 #include <tuple>
