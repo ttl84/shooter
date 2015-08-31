@@ -3,9 +3,8 @@
 #include "components.h"
 #include "Circ.h"
 #include "Rect.h"
-#include "PI.h"
 #include <vector>
-using namespace ecs;
+
 void thinkSystem(Entity & e)
 {
 	for(auto i : e.select(Component::THINK))

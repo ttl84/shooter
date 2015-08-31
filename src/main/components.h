@@ -2,6 +2,8 @@
 #define COMPONENTS_H
 #include "math/Vec2.h"
 #include "math/Size.h"
+#include "math/Rect.h"
+#include "math/Circ.h"
 #include <functional>
 #include "SDL2/SDL.h"
 struct Heat{
@@ -16,31 +18,6 @@ struct Life{
 
 enum class Faction{
 	PLAYER,
-		ENEMY
-		};
-namespace ecs{	
-	enum class Component{
-		POSITION,
-			DIRECTION,
-			VELOCITY,
-			ANGULAR_VELOCITY,
-			ACCELERATION,
-			ANGULAR_ACCEL,
-			SIZE,
-	
-			IMAGE,
-			
-			LIFE,
-			HEAT,
-
-			COLLISION_EFFECT,
-		
-			THINK,
-		
-			FACTION,
-		
-			TARGET
-		
-			};
-}
+	ENEMY
+};
 #endif
