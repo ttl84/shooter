@@ -609,15 +609,3 @@ void GameState::draw()
 	SDL_RenderPresent(renderer);
 }
 
-
-void GameState::schedule(std::function< void(ecs::Entity&) > func)
-{
-	worldUpdateQueue.push(func);
-}
-void GameState::execute()
-{
-	while(not worldUpdateQueue.empty()) {
-		worldUpdateQueue.front()(entities);
-		worldUpdateQueue.pop();
-	}
-}

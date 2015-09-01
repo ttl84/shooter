@@ -7,7 +7,7 @@
 #include "video/video.h"
 #include "audio/audio.h"
 #include "keyboard/keyboard.h"
-#include "Entity.h"
+#include "world.h"
 #include "stats.h"
 
 #include <deque>
@@ -28,16 +28,7 @@ struct Game{
 	Rect bounds;
 };
 
-// world keeps all the game objects
-struct World{
-	std::unordered_map<std::string, Stat> stats;
-	std::deque<Vec2> stars;
-	ecs::Entity entities;
 
-	std::queue< std::function< void(ecs::Entity&) > > worldUpdateQueue;
-	void schedule(std::function< void(ecs::Entity&) > func);
-	void execute();
-};
 
 // All state of the program
 class State{

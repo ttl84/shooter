@@ -1,29 +1,29 @@
 #include "systems.h"
-#include "Entity.h"
+#include "world.h"
 #include "components.h"
 #include "Circ.h"
 #include "Rect.h"
 #include <vector>
 
-void thinkSystem(Entity & e)
+void thinkSystem(World &w)
 {
-	for(auto i : e.select(Component::THINK))
-		e.think_function[i](i);
+	for(auto i : w.select(Component::THINK))
+		w.think_function[i](i);
 }
 
-void accelSystem(Entity & e, float dt)
+void accelSystem(World & w, float dt)
 {
 	for(auto i : e.select(accel_mask))
 		e.velocity[i] += dt * e.acceleration[i];
 }
 
-void moveSystem(Entity & e, float dt)
+void moveSystem(World & w, float dt)
 {
 	for(auto i : e.select(move_mask))
 		e.position[i] += dt * e.velocity[i];
 }
 
-void collisionSystem(Entity & e)
+void collisionSystem(World & w)
 {
 	// first construct collision shape for entities that can collide
 	struct Body{
@@ -58,7 +58,7 @@ void collisionSystem(Entity & e)
 	}
 }
 
-void timerSystem(Entity & e, float dt)
+void timerSystem(World & w, float dt)
 {
 	for(auto i : e.select(Component::TIMER))
 	{
@@ -70,17 +70,17 @@ void timerSystem(Entity & e, float dt)
 	}
 }
 
-void deathSystem(Entity & e)
+void deathSystem(World &w)
 {
-	for(auto i : e.select(Component::LIFE))
+	for(auto i : w.select(Component::LIFE))
 	{
-		auto & life = e.life[i];
+		auto & life = w.life[i];
 		if(life.value <= 0 and life.deathAction != nullptr)
 			life.deathAction(i);
 	}
 }
 
-void drawSystem(Entity & e, SDL_Renderer * renderer, Rect const & camera)
+void drawSystem(World & w, SDL_Renderer * renderer, Rect const & camera)
 {
 	for(auto i : e.select(draw_mask))
 	{
