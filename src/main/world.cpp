@@ -1,9 +1,4 @@
-#include "systems.h"
 #include "world.h"
-#include "components.h"
-#include "Circ.h"
-#include "Rect.h"
-#include <vector>
 
 void thinkSystem(World &w)
 {
@@ -11,48 +6,35 @@ void thinkSystem(World &w)
 		w.think_function[i](i);
 }
 
-void accelSystem(World & w, float dt)
+void moveShips(World & w, float dt)
 {
-	for(auto i : e.select(accel_mask))
-		e.velocity[i] += dt * e.acceleration[i];
+	auto mask = w.ships.position.mask & w.ships.velocity.mask & w.ships.acceleration.mask;
+	for(unsigned i = 0; i < ships.length; i++) {
+		if(mask[i]) {
+			w.ships.velocity[i] += w.ships.acceleration[i] * dt;
+			w.ships.position[i] += w.ships.velocity[i] * dt;
+		}
+	}
 }
-
-void moveSystem(World & w, float dt)
+void turnShips(World & w, float dt)
 {
-	for(auto i : e.select(move_mask))
-		e.position[i] += dt * e.velocity[i];
+	for(unsigned i = 0; i < ships.length; i++) {
+		w.ships.angular_speed[i] += w.ships.angular_acceleration[i] * dt;
+		w.ships.direction[i] += w.ships.angular_speed[i];
+	}
 }
 
 void collisionSystem(World & w)
 {
-	// first construct collision shape for entities that can collide
-	struct Body{
-		unsigned id;
-		Circ shape;
-	};
-	std::vector<Body> players;
-	std::vector<Body> enemies;
-	for(auto i : e.select(collision_effect_mask))
-	{
-
-		Body obj;
-		obj.id = i;
-		obj.shape = Circ(e.position[i], e.size[i].w / 2.5);
-		if(e.faction[i] == Faction::PLAYER)
-			players.push_back(obj);
-		else if(e.faction[i] == Faction::ENEMY)
-			enemies.push_back(obj);
-	}
-	
-	// test the two groups against each other
-	for(Body & i : players)
-	{
-		for(Body & j : enemies)
-		{
-			if(Circ::intersect(i.shape, j.shape))
-			{
-				e.collision_effect[i.id](j.id);
-				e.collision_effect[j.id](i.id);
+	for(unsigned i = 0; i < ships.length; i++) {
+		Circ icirc(w.ships.position[i], w.ships.radius[i]);
+		for(unsigned j = i + 1; j < ships.length; j++) {
+			Circ jcirc(w.ships.position[j], w.ships.radius[j]);
+			if(Circ::intersect(icirc, jcirc)) {
+				w.schedule([i, j](World & w) {
+					w.ships.collision_function[i](j);
+					w.ships.collision_function[j](i);
+				});
 			}
 		}
 	}

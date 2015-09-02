@@ -1,9 +1,8 @@
-#include "GameState.h"
+#include "state.h"
 #include "util/debug.h"
 #include "keyboard/keyboard.h"
 #include "video/Font.h"
 #include "video/images.h"
-#include "systems.h"
 #include "stats.h"
 #include <ctime>
 #include <sstream>

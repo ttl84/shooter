@@ -100,7 +100,18 @@ static bool strToKeycode(std::string name, SDL_Keycode & output)
 	#undef BEGIN_CASE
 	#undef END_CASE
 }
-KeyBinding::KeyBinding(char const * path)
+
+KeyBinding::KeyBinding()
+{
+	faster = SDLK_UP;
+	slower = SDLK_DOWN;
+	left = SDLK_LEFT;
+	right = SDLK_RIGHT;
+	shoot = SDLK_z;
+	reset = SDLK_r;
+}
+
+void KeyBinding::load(char const * path)
 {
 	std::ifstream is(path);
 	fr::FileReader reader(is);

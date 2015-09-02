@@ -7,7 +7,7 @@ struct KeyPress{
 	bool slower;
 	bool left;
 	bool right;
-	bool fire;
+	bool shoot;
 	bool quit;
 	bool reset;
 	bool any;
@@ -22,8 +22,7 @@ struct KeyBinding{
 		right,
 		shoot;
 
-	KeyBinding();
-	KeyBinding(char const * path);
+	void load(char const * path);
 };
 
 struct Keyboard{

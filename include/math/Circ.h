@@ -9,9 +9,11 @@ struct Circ{
 	Circ(void) : position(0, 0), r(0) {}
 	Circ(float X, float Y, float R) : position(X, Y), r(fabs(R)) {}
 	Circ(Vec2 v, float R) : position(v), r(fabs(R)) {}
-	static bool intersect(Circ const & a, Circ const & b)
-	{
-		return (a.position - b.position).norm() < (a.r + b.r);
-	}
+
 };
+template<class T>
+bool intersect(Circ a, Circ b)
+{
+	return (a.position - b.position).norm() < (a.r + b.r);
+}
 #endif

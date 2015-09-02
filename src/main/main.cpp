@@ -1,35 +1,30 @@
 
 #include "SDL2/SDL.h"
 
-#include "GameState.h"
+#include "state.h"
 #include "keyboard/keyboard.h"
 int main(int argc, char ** argv)
 {
 	float constexpr TIME_UNIT = 1.0 / 1000.0;
 	float constexpr MAX_DT = 1.0 / 30.0;
-	static GameState state("shooter game", 480, 480);
+	static State state;
 	
 	
-	
-	Uint32 frame_begin = 0, frame_end = 0;
-	float dt = TIME_UNIT;
-	while(not state.getKeyPress().quit)
-	{
-		frame_begin = frame_end;
-		SDL_Delay(1);
-		state.handleEvent();
+	Timer timer;
+	float dt = 0;
+	while(! state.game.quit) {
+		state.keyboard.update();
+
+		dt += timer.dt();
 		if(dt > MAX_DT)
 			dt = MAX_DT;
-		while(dt > 0)
-		{
+		while(dt > TIME_UNIT) {
 			state.update(TIME_UNIT);
 			dt -= TIME_UNIT;
 		}
 		state.draw();
 		
-		frame_end = SDL_GetTicks();
-		dt += float(frame_end - frame_begin) / 1000.0;
-		state.dt = frame_end - frame_begin;
+		timer.lap();
 	}
 	return 0;
 }
