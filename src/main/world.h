@@ -68,6 +68,8 @@ struct World{
 			worldUpdateQueue.pop();
 		}
 	}
+
+	void update(double dt);
 };
 
 #endif

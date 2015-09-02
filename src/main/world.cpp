@@ -71,3 +71,31 @@ void drawSystem(World & w, SDL_Renderer * renderer, Rect const & camera)
 		}
 	}
 }
+
+void World::update(double dt)
+{
+	if(dead) {
+		if(keyPress.any)
+			reset();
+	}
+	think(ships);
+	shootSystem(entities, dt);
+
+	accelSystem(entities, dt);
+	moveSystem(entities, dt);
+
+	collisionSystem(entities);
+	timerSystem(entities, dt);
+	deathSystem(entities);
+
+	update_camera(*this);
+	update_bounds(*this);
+	trap_player(*this);
+
+	spawn_enemies(*this);
+	despawn_entities(*this);
+
+	updateStars();
+
+	execute();
+}

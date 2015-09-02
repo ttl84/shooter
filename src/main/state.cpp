@@ -6,15 +6,7 @@
 #include "stats.h"
 #include <ctime>
 #include <sstream>
-/*
-namespace player_stat{
-	float fast_speed = 200;
-	float slow_speed = 50;
-	float normal_speed = slow_speed + (fast_speed - slow_speed) / 2.0;
-	float forward_accel = 150;
-	float backward_accel = 50;
-	float side_accel = 1000;
-}*/
+
 /*
 Gun player_gun(GameState & state)
 {
@@ -111,7 +103,7 @@ Gun basic_gun(GameState & state)
 }
 */
 // cap ship values to its physical limits
-void ship_constraint(GameState & state, unsigned i)
+void ship_constraint(State & state, unsigned i)
 {
 	Entity & e = state.getEntities();
 	ShipStats const * stats = e.shipstats[i];
@@ -167,18 +159,6 @@ void keyboard_think(GameState & state, unsigned i)
 	brain.shoot = keyPress.fire;
 }
 
-void GameState::initKey()
-{
-	keyPress = KeyPress{0};
-
-	keyBinding.faster = SDLK_UP;
-	keyBinding.slower = SDLK_DOWN;
-	keyBinding.left = SDLK_LEFT;
-	keyBinding.right = SDLK_RIGHT;
-	keyBinding.fire = SDLK_z;
-	loadKeyBinding("config.txt", keyBinding);
-}
-
 void GameState::initPRG()
 {
 	uint64_t seed;
@@ -189,31 +169,6 @@ void GameState::initPRG()
 	PRG = std::mt19937(seed);
 	starPRG = std::mt19937(seed);
 	enemySpawnPRG = std::mt19937(seed);
-}
-GameState::GameState(std::string title, unsigned width, unsigned height):
-	windowTitle(title),
-	windowWidth(width),
-	windowHeight(height)
-{
-	initSDL();
-	initKey();
-	initFont();
-	initPRG();
-	
-	reset();
-}
-GameState::~GameState()
-{
-	SDL_DestroyRenderer(renderer);
-	renderer = nullptr;
-
-	SDL_DestroyWindow(window);
-	window = nullptr;
-	
-	Mix_CloseAudio();
-
-	SDL_QuitSubSystem(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_TIMER | SDL_INIT_AUDIO);
-	SDL_Quit();
 }
 void GameState::reset()
 {
@@ -276,76 +231,6 @@ void GameState::reset()
 	execute();
 }
 
-SDL_Texture* GameState::loadTexture(std::string filename)
-{
-	if(textureMap.find(filename) == textureMap.end())
-	{
-		Image image;
-		bool good;
-		std::tie(image, good) = loadImage(filename);
-		
-		SDL_Texture * texture;
-		if(not good)
-			texture = nullptr;
-		else
-			texture = image.makeTexture(renderer);
-		if(texture == nullptr)
-			debug::err << "GameState::loadTexture: unable to load [" << filename << ']' << std::endl;
-		textureMap[filename] = texture;
-	}
-	return textureMap[filename];
-}
-SDL_Texture* GameState::loadFontTexture(char c)
-{
-	auto it = fontTextureMap.find(c);
-	if(it == fontTextureMap.end())
-		return nullptr;
-	else
-		return it->second;
-}
-
-Font const & GameState::getFont()
-{
-	return font;
-}
-void GameState::centerCamera(Vec2 center)
-{
-	camera.setCenter(center);
-}
-void GameState::updateBounds(Vec2 center)
-{
-	bounds.setCenterY(center.y);
-}
-void GameState::updateCurrentY(float newY)
-{
-	previousY = currentY;
-	currentY = newY;
-}
-float GameState :: getDistanceTravelled(void) const
-{
-	return -(currentY - previousY);
-}
-float GameState :: getTotalDistance(void) const
-{
-	return -currentY;
-}
-
-void GameState:: enemyKill()
-{
-	score+= 3;
-}
-void GameState::enemyHit()
-{
-	score ++;
-}
-void GameState::playerDie()
-{
-	dead = true;
-}
-decltype(GameState::score) GameState::getScore() const
-{
-	return score;
-}
 
 void drawText(GameState & state, std::string str, int x, int y)
 {
@@ -566,33 +451,9 @@ void despawn_entities(GameState & state)
 	}
 }
 
-void GameState::update(float const dt)
+void State::update(double const dt)
 {
-	if(dead)
-	{
-		if(keyPress.any)
-			reset();
-	}
-	thinkSystem(entities);
-	shootSystem(entities, dt);
-	
-	accelSystem(entities, dt);
-	moveSystem(entities, dt);
-	
-	collisionSystem(entities);
-	timerSystem(entities, dt);
-	deathSystem(entities);
-	
-	update_camera(*this);
-	update_bounds(*this);
-	trap_player(*this);
-	
-	spawn_enemies(*this);
-	despawn_entities(*this);
-
-	updateStars();
-	
-	execute();
+	world.update(dt);
 }
 
 

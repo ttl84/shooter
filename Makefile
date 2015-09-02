@@ -32,7 +32,8 @@ $(BIN): $(filter-out $(TESTOBJ), $(OBJ))
 	$(CXX) $^ $(LDFLAGS) -o $(BIN)
 
 # Create the test programs
-%.test: $(filter-out src/main/main.o $(filter-out src/%/test.o, $(TESTOBJ)) , $(OBJ))
+util.test: src/util/test.o
+%.test: %.o
 	$(CXX) $^ $(LDFLAGS) -o bin/$@
 
 # Create the object files and dependency files from source files.
