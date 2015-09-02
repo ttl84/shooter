@@ -2,38 +2,41 @@
 
 void thinkSystem(World &w)
 {
-	for(auto i : w.select(Component::THINK))
-		w.think_function[i](i);
+	for(unsigned i = 0; i < decltype(w.ships)::length; i++) {
+		if(w.ships.control_function.mask[i]) {
+			w.ships.control_function.data[i](i);
+		}
+	}
 }
 
 void moveShips(World & w, float dt)
 {
 	auto mask = w.ships.position.mask & w.ships.velocity.mask & w.ships.acceleration.mask;
-	for(unsigned i = 0; i < ships.length; i++) {
+	for(unsigned i = 0; i < decltype(w.ships)::length; i++) {
 		if(mask[i]) {
-			w.ships.velocity[i] += w.ships.acceleration[i] * dt;
-			w.ships.position[i] += w.ships.velocity[i] * dt;
+			w.ships.velocity.data[i] += w.ships.acceleration.data[i] * dt;
+			w.ships.position.data[i] += w.ships.velocity.data[i] * dt;
 		}
 	}
 }
 void turnShips(World & w, float dt)
 {
-	for(unsigned i = 0; i < ships.length; i++) {
-		w.ships.angular_speed[i] += w.ships.angular_acceleration[i] * dt;
-		w.ships.direction[i] += w.ships.angular_speed[i];
+	for(unsigned i = 0; i < decltype(w.ships)::length; i++) {
+		w.ships.angular_speed.data[i] += w.ships.angular_acceleration.data[i] * dt;
+		w.ships.direction.data[i] += w.ships.angular_speed.data[i];
 	}
 }
 
 void collisionSystem(World & w)
 {
-	for(unsigned i = 0; i < ships.length; i++) {
-		Circ icirc(w.ships.position[i], w.ships.radius[i]);
-		for(unsigned j = i + 1; j < ships.length; j++) {
-			Circ jcirc(w.ships.position[j], w.ships.radius[j]);
-			if(Circ::intersect(icirc, jcirc)) {
+	for(unsigned i = 0; i < decltype(w.ships)::length; i++) {
+		Circ icirc(w.ships.position.data[i], w.ships.radius.data[i]);
+		for(unsigned j = i + 1; j < decltype(w.ships)::length; j++) {
+			Circ jcirc(w.ships.position.data[j], w.ships.radius.data[j]);
+			if(intersect(icirc, jcirc)) {
 				w.schedule([i, j](World & w) {
-					w.ships.collision_function[i](j);
-					w.ships.collision_function[j](i);
+					w.ships.collision_function.data[i](j);
+					w.ships.collision_function.data[j](i);
 				});
 			}
 		}
@@ -42,35 +45,29 @@ void collisionSystem(World & w)
 
 void timerSystem(World & w, float dt)
 {
-	for(auto i : e.select(Component::TIMER))
-	{
-		auto & timer = e.timer[i];
 
-		timer.remaining -= dt;
-		if(timer.remaining <= 0 and timer.action != nullptr)
-			timer.action(i);
-	}
 }
 
 void deathSystem(World &w)
 {
-	for(auto i : w.select(Component::LIFE))
-	{
-		auto & life = w.life[i];
-		if(life.value <= 0 and life.deathAction != nullptr)
-			life.deathAction(i);
-	}
+
 }
 
 void drawSystem(World & w, SDL_Renderer * renderer, Rect const & camera)
 {
-	for(auto i : e.select(draw_mask))
-	{
-		SDL_Rect posRect;
-		SDL_QueryTexture(e.image[i], nullptr, nullptr, &posRect.w, &posRect.h);
-		posRect.x = int(e.position[i].x) - posRect.w / 2 - int(camera.x);
-		posRect.y = int(e.position[i].y) - posRect.h / 2 - int(camera.y);
-		SDL_RenderCopyEx(renderer, e.image[i], nullptr, &posRect, rad2deg(e.direction[i] + PI / 2.0), nullptr, SDL_FLIP_NONE);
-
+	auto mask = w.ships.position.mask & w.ships.texture.mask & w.ships.rect.mask & w.ships.direction.mask;
+	for(unsigned i = 0; i < decltype(w.ships)::length; i++) {
+		if(mask[i]) {
+			SDL_Rect posRect = w.ships.rect.data[i];
+			posRect.x = int(w.ships.position.data[i].x) - posRect.w / 2 - int(camera.x);
+			posRect.y = int(w.ships.position.data[i].y) - posRect.h / 2 - int(camera.y);
+			SDL_RenderCopyEx(renderer,
+							 w.ships.texture.data[i],
+							 nullptr,
+							 &posRect,
+							 rad2deg(w.ships.direction.data[i] + PI / 2.0),
+							 nullptr,
+							 SDL_FLIP_NONE);
+		}
 	}
 }

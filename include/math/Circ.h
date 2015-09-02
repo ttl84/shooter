@@ -12,7 +12,7 @@ struct Circ{
 
 };
 template<class T>
-bool intersect(Circ a, Circ b)
+bool intersect(T&& a, T&& b)
 {
 	return (a.position - b.position).norm() < (a.r + b.r);
 }
