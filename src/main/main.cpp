@@ -3,7 +3,7 @@
 int main(int argc, char ** argv)
 {
 	double constexpr TIME_UNIT = 1.0 / 1000.0;
-	double constexpr MAX_DT = 1.0 / 30.0;
+	unsigned constexpr MAX_UPDATES = 25;
 	static State state;
 	
 	
@@ -11,15 +11,16 @@ int main(int argc, char ** argv)
 	double dt = TIME_UNIT;
 	while(! state.game.quit) {
 		state.keyboard.update();
-		if(dt > MAX_DT)
-			dt = MAX_DT;
-		while(dt >= TIME_UNIT) {
+
+		unsigned updates = MAX_UPDATES;
+		while(dt >= TIME_UNIT && updates != 0) {
 			state.update(TIME_UNIT);
 			dt -= TIME_UNIT;
+			updates--;
 		}
 		state.draw();
 		
-		timer.lap();
+		dt += timer.lap();
 	}
 	return 0;
 }
