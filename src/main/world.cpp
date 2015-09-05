@@ -1,5 +1,6 @@
 #include "world.h"
-
+#include "state.h"
+unsigned IComponents::counter = 0;
 void thinkSystem(World &w)
 {
 	for(unsigned i = 0; i < decltype(w.ships)::length; i++) {
@@ -23,7 +24,7 @@ void turnShips(World & w, float dt)
 {
 	for(unsigned i = 0; i < decltype(w.ships)::length; i++) {
 		w.ships.angular_speed.data[i] += w.ships.angular_acceleration.data[i] * dt;
-		w.ships.direction.data[i] += w.ships.angular_speed.data[i];
+		w.ships.direction.data[i] += w.ships.angular_speed.data[i] * dt;
 	}
 }
 
@@ -72,7 +73,45 @@ void drawSystem(World & w, SDL_Renderer * renderer, Rect const & camera)
 	}
 }
 
-void World::update(double dt)
+
+// does what the ship wants
+void shipControl(World & w)
+{
+	if(brain.accel) {
+		Vec2 accel(0, -stats->.accel);
+		accel.rotate(e.direction[i]);
+		e.accel[i] = accel;
+	} else {
+		e.accel[i] = Vec2(0,0);
+	}
+
+	e.accel_ang[i] = 0;
+	if(brain.turn_right)
+		e.accel_ang[i] += stats->accel_ang;
+	if(brain.turn_left)
+		e.accel_ang[i] -= stats->accel_ang;
+
+
+
+}
+// cap ship values to its physical limits
+void ship_constraint(World& w)
+{
+	ShipStats const * stats = e.shipstats[i];
+
+	float speed = e.velocity[i].norm();
+	if(speed > stats->max_speed)
+		e.velocity[i] *= (stats->max_speed / speed);
+	else if(speed < stats.min_speed)
+		e.velocity[i] *= (stats->min_speed / speed);
+
+	float speed_ang = e.speed_ang[i];
+	if(speed_ang > stats->max_speed_ang)
+		e.speed_ang[i] = stats->max_speed_ang;
+	else if(speed_ang < stats->min_speed_ang)
+		e.speed_ang[i] = stats->min_speed_ang;
+}
+void World::update(State &s, double dt)
 {
 	if(dead) {
 		if(keyPress.any)

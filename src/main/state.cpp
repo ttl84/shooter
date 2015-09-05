@@ -102,50 +102,9 @@ Gun basic_gun(GameState & state)
 	return g;
 }
 */
-// cap ship values to its physical limits
-void ship_constraint(State & state, unsigned i)
-{
-	Entity & e = state.getEntities();
-	ShipStats const * stats = e.shipstats[i];
 
-	float speed = e.velocity[i].norm();
-	if(speed > stats->max_speed)
-		e.velocity[i] *= (stats->max_speed / speed);
-	else if(speed < stats.min_speed)
-		e.velocity[i] *= (stats->min_speed / speed);
 
-	float speed_ang = e.speed_ang[i];
-	if(speed_ang > stats->max_speed_ang)
-		e.speed_ang[i] = stats->max_speed_ang;
-	else if(speed_ang < stats->min_speed_ang)
-		e.speed_ang[i] = stats->min_speed_ang;
-}
 
-// does what the ship wants
-void ship_control(GameState & state, unsigned i)
-{
-	Entity & e = state.getEntities();
-	ShipBrain const & brain = e.ship_brain[i];
-	ShipStats const * stats = e.ship_stats[i];
-
-	
-	if(brain.accel) {
-		Vec2 accel(0, -stats->.accel);
-		accel.rotate(e.direction[i]);
-		e.accel[i] = accel;
-	} else {
-		e.accel[i] = Vec2(0,0);
-	}
-
-	e.accel_ang[i] = 0;
-	if(brain.turn_right)
-		e.accel_ang[i] += stats->accel_ang; 
-	if(brain.turn_left)
-		e.accel_ang[i] -= stats->accel_ang;
-
-	
-		
-}
 // use keyboard inputs to change brain state
 void keyboard_think(GameState & state, unsigned i)
 {
