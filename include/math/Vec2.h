@@ -4,13 +4,13 @@
 
 struct Vec2{
 	float x, y;
-	constexpr Vec2(void): x{0}, y{0} {}
+	constexpr Vec2(): x{0}, y{0} {}
 	constexpr Vec2(float X, float Y): x{X}, y{Y} {}
 		
 	// create unit vector from angle
 	static Vec2 fromAngle(float rad);
-	float angle(void)const;
-	float norm(void)const;
+	float angle()const;
+	float norm()const;
 };
 
 Vec2 Vec2::fromAngle(float rad)
@@ -26,6 +26,12 @@ float Vec2::angle(void)const
 {
 	return atan2(y, x);
 }
+inline
+float dotProduct(Vec2 const & a, Vec2 const & b)
+{
+	return a.x * b.x + a.y * b.y;
+}
+
 Vec2 operator+(Vec2 const & a, Vec2 const & b)
 {
 	return Vec2(a.x + b.x, a.y + b.y);

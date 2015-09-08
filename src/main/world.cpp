@@ -1,58 +1,8 @@
 #include "world.h"
 #include "state.h"
-unsigned IComponents::counter = 0;
-void thinkSystem(World &w)
-{
-	for(unsigned i = 0; i < decltype(w.ships)::length; i++) {
-		if(w.ships.control_function.mask[i]) {
-			w.ships.control_function.data[i](i);
-		}
-	}
-}
+#include <iostream>
 
-void moveShips(World & w, float dt)
-{
-	auto mask = w.ships.position.mask & w.ships.velocity.mask & w.ships.acceleration.mask;
-	for(unsigned i = 0; i < decltype(w.ships)::length; i++) {
-		if(mask[i]) {
-			w.ships.velocity.data[i] += w.ships.acceleration.data[i] * dt;
-			w.ships.position.data[i] += w.ships.velocity.data[i] * dt;
-		}
-	}
-}
-void turnShips(World & w, float dt)
-{
-	for(unsigned i = 0; i < decltype(w.ships)::length; i++) {
-		w.ships.angular_speed.data[i] += w.ships.angular_acceleration.data[i] * dt;
-		w.ships.direction.data[i] += w.ships.angular_speed.data[i] * dt;
-	}
-}
 
-void collisionSystem(World & w)
-{
-	for(unsigned i = 0; i < decltype(w.ships)::length; i++) {
-		Circ icirc(w.ships.position.data[i], w.ships.radius.data[i]);
-		for(unsigned j = i + 1; j < decltype(w.ships)::length; j++) {
-			Circ jcirc(w.ships.position.data[j], w.ships.radius.data[j]);
-			if(intersect(icirc, jcirc)) {
-				w.schedule([i, j](World & w) {
-					w.ships.collision_function.data[i](j);
-					w.ships.collision_function.data[j](i);
-				});
-			}
-		}
-	}
-}
-
-void timerSystem(World & w, float dt)
-{
-
-}
-
-void deathSystem(World &w)
-{
-
-}
 
 void drawSystem(World & w, SDL_Renderer * renderer, Rect const & camera)
 {
@@ -94,23 +44,7 @@ void shipControl(World & w)
 
 
 }
-// cap ship values to its physical limits
-void ship_constraint(World& w)
-{
-	ShipStats const * stats = e.shipstats[i];
 
-	float speed = e.velocity[i].norm();
-	if(speed > stats->max_speed)
-		e.velocity[i] *= (stats->max_speed / speed);
-	else if(speed < stats.min_speed)
-		e.velocity[i] *= (stats->min_speed / speed);
-
-	float speed_ang = e.speed_ang[i];
-	if(speed_ang > stats->max_speed_ang)
-		e.speed_ang[i] = stats->max_speed_ang;
-	else if(speed_ang < stats->min_speed_ang)
-		e.speed_ang[i] = stats->min_speed_ang;
-}
 void World::update(State &s, double dt)
 {
 	if(dead) {
@@ -120,8 +54,7 @@ void World::update(State &s, double dt)
 	think(ships);
 	shootSystem(entities, dt);
 
-	accelSystem(entities, dt);
-	moveSystem(entities, dt);
+	physicsSystem.update(dt);
 
 	collisionSystem(entities);
 	timerSystem(entities, dt);

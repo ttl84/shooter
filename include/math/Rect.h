@@ -2,79 +2,110 @@
 #define Rect_H
 #include "Vec2.h"
 #include "Size.h"
+
 struct Rect{
-	float x, y;
-	float w, h;
+	float left, right, top, bottom;
 	
-	Rect(float X, float Y, float W, float H) : x(X), y(Y), w(W), h(H)
+	Rect()
 	{
-		if(w < 0)
-		{
-			x += w;
-			w = -w;
-		}
-		if(h < 0)
-		{
-			y += h;
-			h = -h;
-		}
+
 	}
-	Rect(Vec2 const & vec, Size const & size): x(vec.x), y(vec.y), w(size.w), h(size.h) {}
-	Rect(void): x(0), y(0), w(0), h(0) {}
-	Vec2 getCenter(void) const
+
+	Rect(Vec2 origin, Size size)
 	{
-		Vec2 point;
-		point.x = x + w / 2;
-		point.y = y + h / 2;
-		return point;
+		left = origin.x;
+		bottom = origin.y;
+		right = left + size.w;
+		top = bottom + size.h;
+		if(left > right)
+			std::swap(left, right);
+		if(bottom > top)
+			std::swap(bottom, top);
 	}
-	void setCenter(Vec2 const & center)
+
+	void operator+=(Vec2 v)
 	{
-		x = center.x - w / 2;
-		y = center.y - h / 2;
+		left += v.x;
+		right += v.x;
+		bottom += v.y;
+		top += v.y;
 	}
-	float getCenterY(void) const
+	Vec2 getCenter() const
 	{
-		return y + w / 2;
+		return Vec2(left / 2 + right / 2,
+					top / 2 + bottom / 2);
 	}
-	void setCenterY(float center_y)
+	void setCenter(Vec2 newCenter)
 	{
-		y = center_y - h / 2;
+		*this += newCenter - getCenter();
 	}
-	Vec2 getPosition(void) const
+	Vec2 getOrigin() const
 	{
-		return Vec2(x, y);
+		return Vec2(left, bottom);
 	}
-	float getTop(void) const
+	void setOrigin(Vec2 newOrigin)
 	{
-		return y;
+		*this += newOrigin - getOrigin();
 	}
-	float getBottom(void) const
+
+	bool contains(Vec2 p)const
 	{
-		return y + h;
+		return left <= p.x &&
+				right >= p.x &&
+				top >= p.y &&
+				bottom <= p.y;
 	}
-	float getLeft(void) const
-	{
-		return x;
-	}
-	float getRight(void) const
-	{
-		return x + w;
-	}
-	bool contains(Vec2 const & p)const
-	{
-		return p.x >= getLeft() and p.x <= getRight() and p.y >= getTop() and p.y <= getBottom();
-	}
-	bool disjoint(Rect const & r)const
-	{
-		return getRight() <= r.getLeft() or
-			getLeft() >= r.getRight() or
-			getBottom() <= r.getTop() or
-			getTop() >= r.getBottom();
-	}
-	bool intersects(Rect const & r) const
-	{
-		return not disjoint(r);
-	}
+
 };
+
+inline
+bool disjointX(Rect const & a, Rect const & b)
+{
+	return a.right <= b.left ||
+			a.left >= b.right;
+}
+inline
+bool disjointY(Rect const & a, Rect const & b)
+{
+	return a.top <= b.bottom ||
+			a.bottom >= b.top;
+}
+inline
+bool disjoint(Rect const & a, Rect const & b)
+{
+	return disjointX(a, b) || disjointY(a, b);
+}
+
+inline
+bool intersectX(Rect const & a, Rect const & b)
+{
+	return (a.left < b.left && a.right > b.left) ||
+			(a.left < b.right && a.right > b.right);
+}
+
+inline
+bool intersectY(Rect const & a, Rect const & b)
+{
+	return (a.bottom < b.bottom && a.top > b.bottom) ||
+			(a.bottom < b.top && a.top > b.top);
+}
+
+inline
+bool intersect(Rect const & a, Rect const & b)
+{
+	return intersectX(a, b) &&  intersectY(a, b);
+}
+inline
+Rect boundingBlock(Rect const & r, float blockWidth, float blockHeight)
+{
+	Rect bound;
+	bound.top = std::ceil(r.top / blockHeight) * blockHeight;
+	bound.bottom = std::floor(r.bottom / blockHeight) * blockHeight;
+	bound.left = std::floor(r.left / blockWidth) * blockWidth;
+	bound.right = std::ceil(r.right / blockWidth) * blockWidth;
+	return bound;
+}
+
+
+
 #endif

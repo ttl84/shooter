@@ -19,7 +19,6 @@ src/filereader/Token.cpp
 src/filereader/Token.h
 src/filereader/TokenStream.cpp
 src/filereader/TokenStream.h
-src/main/components.h
 src/main/world.h
 src/main/state.cpp
 src/main/state.h
@@ -120,3 +119,6 @@ include/util/timer.h
 src/util/test.cpp
 src/main/game.hpp
 src/main/io.hpp
+src/main/physics.hpp
+src/main/physics.cpp
+src/main/ecs.hpp

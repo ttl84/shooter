@@ -11,9 +11,13 @@ struct Circ{
 	Circ(Vec2 v, float R) : position(v), r(fabs(R)) {}
 
 };
-template<class T>
-bool intersect(T&& a, T&& b)
+inline
+bool intersect(Circ const & a, Circ const & b)
 {
-	return (a.position - b.position).norm() < (a.r + b.r);
+	Vec2 diff = a.position - b.position;
+	float distanceSquared = dotProduct(diff, diff);
+	float distance2 = a.r + b.r;
+	float distance2Squared = distance2 * distance2;
+	return distanceSquared < distance2Squared;
 }
 #endif
