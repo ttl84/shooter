@@ -2,38 +2,38 @@
 #define ECS_HPP
 #include <vector>
 #include <tuple>
-#include <unordered_map>
+#include <cstring>
 
 /* Interface for PackedArray.
  * PackedArray is not ordered, but packed.
  * Indexing is done by an ID.
  * Removal from the array will move the last item to the removed slot.
  */
-template<class IDTYPE>
+
 class IPackedArray{
 public:
 	// ID is the object ID. It is the key to the index array
 	struct ID {
-		IDTYPE value;
+		uint16_t value;
 	};
 
 	// Slot is the internal key to the data array.
 	struct Slot {
-		IDTYPE value;
+		uint16_t value;
 	};
 
 	// This is the max ID/Slot.
-	static constexpr IDTYPE MAX = ~0;
+	static constexpr uint16_t MAX = ~0;
 	// Reserve MAX to mean invalid ID or Slot.
-	static constexpr IDTYPE INVALID = MAX;
+	static constexpr uint16_t INVALID = MAX;
 
 private:
 	// Find the ID of the item at slot
-	std::vector<IDTYPE> ids;
+	std::vector<uint16_t> ids;
 protected:
 	// Find the Slot of the item with the ID.
 	// This array can have gaps. use INVALID to show that it is one.
-	std::vector<IDTYPE> index;
+	std::vector<uint16_t> index;
 	// Append new item to the end
 	virtual void push()=0;
 	// remove the last item
@@ -77,11 +77,13 @@ public:
 
 		// Get the new slot number and put it in id2slot.
 		// If id2slot is not large enough, resize it.
-		IDTYPE slot = ids.size() - 1;
+		// Also fill uninitialized values to INVALID.
+		Slot slot;
+		slot.value = ids.size() - 1;
 		if(id.value >= index.size()) {
 			index.resize(id.value + 1, INVALID);
 		}
-		index[id.value] = slot;
+		index[id.value] = slot.value;
 
 		return true;
 	}
@@ -137,22 +139,13 @@ public:
 	{
 		return Slot{index[id.value]};
 	}
-
-	/* This is for components that refer to IDs.
-	 * When an ID is deallocated, this is called for
-	 * every comoponent array.
-	 */
-	virtual void invalidate(ID id)
-	{
-	}
-
 };
 
 // Basic implementation of PackedArray.
-template<class IDTYPE, class T>
-class PackedVector : public IPackedArray<IDTYPE> {
-	typedef typename IPackedArray<IDTYPE>::Slot Slot;
-	typedef typename IPackedArray<IDTYPE>::ID ID;
+template<class T>
+class PackedVector : public IPackedArray {
+	typedef typename IPackedArray::Slot Slot;
+	typedef typename IPackedArray::ID ID;
 	std::vector<T> data;
 protected:
 	virtual void push()
@@ -177,9 +170,17 @@ public:
 		return data[slot.value];
 	}
 
-	T& itemAtID(ID id)
+	/* Get the item with the ID.
+	 * Returns null if item is not found.
+	 */
+	T* itemAtID(ID id)
 	{
-		return itemAtSlot(slotAtID(id));
+		if(has(id)) {
+			T& ref = itemAtSlot(slotAtID(id));
+			return &ref;
+		} else {
+			return nullptr;
+		}
 	}
 
 };
@@ -212,10 +213,10 @@ void tuple_steal_last(T& tup, unsigned i)
 }
 
 
-template<class IDTYPE, class ... Ts>
-class PackedVectorTuple: public IPackedArray<IDTYPE> {
-	typedef typename IPackedArray<IDTYPE>::Slot Slot;
-	typedef typename IPackedArray<IDTYPE>::ID ID;
+template<class ... Ts>
+class PackedVectorTuple: public IPackedArray {
+	typedef typename IPackedArray::Slot Slot;
+	typedef typename IPackedArray::ID ID;
 	std::tuple<std::vector<Ts>...> data;
 protected:
 	virtual void push()
@@ -243,19 +244,42 @@ public:
 	}
 
 	template<std::size_t i>
-	typename std::tuple_element<i, std::tuple<Ts...>>::type&
+	typename std::tuple_element<i, std::tuple<Ts...>>::type*
 	itemAtID(ID id)
 	{
-		return itemAtSlot<i>(slotAtID(id));
+		return &(itemAtSlot<i>(slotAtID(id)));
+	}
+};
+
+class ISystem {
+	typedef typename IPackedArray::ID ID;
+public:
+	// Update all components of this system
+	virtual void update(double dt) = 0;
+
+	// Get the component array
+	virtual IPackedArray& getComponents() = 0;
+
+	// Get the name of the system
+	virtual char const * getName() const = 0;
+
+	// Remove object by ID
+	void del(ID id)
+	{
+		getComponents().del(id);
+	}
+
+	// Custom action to invalidate ID referenced by this system.
+	virtual void invalidate(ID id)
+	{
 	}
 };
 
 // Collection of entities.
 // Stores entities as set of components.
 // An entity is an ID and all the components that has the same ID.
-template<class IDTYPE>
 class Entities{
-	typedef typename IPackedArray<IDTYPE>::ID ID;
+	typedef typename IPackedArray::ID ID;
 
 	// ID generator data.
 	// Prioritize getting ID from the free list.
@@ -263,11 +287,11 @@ class Entities{
 	ID nextID;
 	std::vector<ID> freedID;
 
-	/* The collection of component arrays.
-	 * Each array is referred to by a unique name.
-	 * The container only keeps a reference to it.
+	/* The collection of systems.
+	 * Each system has a unique name.
 	 */
-	std::unordered_map<std::string, IPackedArray<IDTYPE>* > components;
+	std::vector<ISystem* > systems;
+
 public:
 	Entities()
 		:nextID{0}
@@ -275,21 +299,40 @@ public:
 
 	}
 
-	/* Attempt to add a new component array.
-	 * Fails when an array of the same name is already in the table.
+	/* Attempt to add a new system.
+	 * Fails when an system of the same name is already in the collection.
 	 * Return false if it fails.
 	 */
-	bool registerComponent(std::string name, IPackedArray<IDTYPE>* comp)
+	bool addSystem(ISystem& newSystem)
 	{
-		auto result = components.emplace(name, comp);
-		return result.second;
+		for(auto sys : systems) {
+			if(strcmp(sys->getName(), newSystem.getName()) == 0) {
+				return false;
+			}
+		}
+		systems.push_back(&newSystem);
+	}
+
+	/* Finds the first system that matches name.
+	 * Returns null if none is found.
+	 */
+	ISystem* findSystem(char const * name)
+	{
+		for(auto sys : systems) {
+			if(strcmp(sys->getName(), name) == 0) {
+				return sys;
+			}
+		}
+		return nullptr;
 	}
 
 	// Allocate new ID
 	ID allocate()
 	{
 		if(freedID.empty()) {
-			return ID{nextID.value++};
+			ID newID = {nextID.value};
+			nextID.value++;
+			return newID;
 		} else {
 			ID recycled = freedID.back();
 			freedID.pop_back();
@@ -297,22 +340,18 @@ public:
 		}
 	}
 
-	// Deallocate ID
+	// Deallocate ID.
+	// Also tells all systems to remove the component with the same ID.
 	void deallocate(ID id)
 	{
-		if(id < nextID) {
+		if(id.value < nextID.value) {
 			freedID.push_back(id);
-			for(auto & it : components) {
-				it.second->del(id);
-				it.second->invalidate(id);
+			for(auto & sys : systems) {
+				sys->del(id);
+				sys->invalidate(id);
 			}
 		}
 	}
-};
-
-class ISystem {
-public:
-	virtual void update(double dt) = 0;
 };
 
 #endif // ECS_HPP

@@ -122,3 +122,5 @@ src/main/io.hpp
 src/main/physics.hpp
 src/main/physics.cpp
 src/main/ecs.hpp
+src/main/render.hpp
+src/main/render.cpp

@@ -22,8 +22,11 @@ struct CollisionRecord {
 	IPackedArray::ID id1, id2;
 };
 
-class Entities;
-class PhysicsSystem{
+class PhysicsSystem : public ISystem{
+	typedef typename IPackedArray::Slot Slot;
+	typedef typename IPackedArray::ID ID;
+
+	Entities & entities;
 public:
 	// Objects stored as a tuple of vectors.
 	PackedVectorTuple<Space, Space, Space, Radius> data;
@@ -39,8 +42,18 @@ public:
 	// This is changed every frame.
 	std::unordered_set<CollisionRecord> collisions;
 
-	PhysicsSystem(Entities & ent);
+	PhysicsSystem(Entities &ent);
 	void update(double dt);
+
+	IPackedArray& getComponents()
+	{
+		return data;
+	}
+
+	char const * getName() const
+	{
+		return name;
+	}
 
 };
 

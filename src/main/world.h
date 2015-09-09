@@ -8,7 +8,7 @@ struct State;
 // world keeps all the game objects
 class World{
 
-	Entities<uint16_t> entities;
+	Entities entities;
 public:
 	void update(State & s, double dt);
 };

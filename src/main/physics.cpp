@@ -36,25 +36,26 @@ struct SpatialHash {
 	}
 };
 
-PhysicsSystem::PhysicsSystem(Entities & ent)
+PhysicsSystem::PhysicsSystem(Entities &ent)
+	:entities(ent)
 {
-	bool good1 = ent.registerComponent(name, &data);
-	if(!good1) {
-		throw std::string("failed to register component \"") + name + '\"';
+	bool good = ent.registerSystem(*this);
+	if(!good) {
+		throw std::string("failed to register system \"") + name + '\"';
 	}
 }
 
 void PhysicsSystem::update(double dt)
 {
 	struct ShapeRecord {
-		IPackedArray::ID id;
+		ID id;
 		Circ shape;
 	};
 
 
 	// move every object and put it in spatial hash table
 	SpatialHash<ShapeRecord> spatialHash(160, 160);
-	for(IPackedArray::Slot slot = {0}; slot.value < data.length(); i++) {
+	for(Slot slot{0}; slot.value < data.length(); slot.value++) {
 		Space & space = data.itemAtSlot<SPACE>(slot);
 		Space & space1 = data.itemAtSlot<SPACE1>(slot);
 		Space & space2 = data.itemAtSlot<SPACE2>(slot);
